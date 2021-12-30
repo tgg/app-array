@@ -1,3 +1,5 @@
+// Taken from react-canvas sample, to adapt
+
 import * as React from 'react';
 import styled from '@emotion/styled';
 

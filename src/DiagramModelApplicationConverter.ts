@@ -1,5 +1,6 @@
 import createEngine, { DefaultNodeModel, DefaultPortModel, DiagramModel, LinkModel, NodeModel } from "@projectstorm/react-diagrams";
-import { AppArray } from './Model'
+import { AppArray } from './Model';
+import { ComponentNodeModel } from './ComponentNodeModel';
 
 function componentId(component: AppArray.Model.Component) {
     if (component.instance)
@@ -8,9 +9,8 @@ function componentId(component: AppArray.Model.Component) {
         return component.name;
 }
 
-function createNode(component: AppArray.Model.Component) {
-    let id = componentId(component);
-    return new DefaultNodeModel(id, 'rgb(0,192,255)');
+function createComponentNode(component: AppArray.Model.Component) {
+    return new ComponentNodeModel(component);
 }
 
 function createPort(node: DefaultNodeModel, name: string, label: string, isIn: boolean = true) {
@@ -25,21 +25,23 @@ function createPort(node: DefaultNodeModel, name: string, label: string, isIn: b
 export function DiagramModelApplicationConverter(app: AppArray.Model.Application) {
     let engine = createEngine();
     let model = new DiagramModel();
-    let nodes: NodeModel[] = [];
+    let nodes: ComponentNodeModel[] = [];
     let links: LinkModel[] = [];
 
     app.components.forEach(component => {
-        let node = createNode(component);
+        let node = createComponentNode(component);
 
         component.provides?.forEach(port => {
-            node.addInPort(port.id);
-        });
-
-        component.consumes?.forEach(service => {
-            node.addOutPort(service.port);
+            createPort(node, port.id, port.id);
         });
 
         let count = 0;
+        component.consumes?.forEach(service => {
+            count++;
+            createPort(node, service.port, `D${count}`, false);
+        });
+
+        count = 0;
         component.depends?.forEach(other => {
             count++;
             let otherId = componentId(other);
@@ -58,9 +60,25 @@ export function DiagramModelApplicationConverter(app: AppArray.Model.Application
 
     nodes.forEach(node => {
 		model.addNode(node);
+
+        // Now we link consumed service with their provider
+        // We may want to relax model later to include only an port string
+        // TODO harden code below since port is already quite relaxed and
+        // lookup can fail.
+        node.component.consumes?.forEach(service => {
+            let consumerPort = node.getPort(service.port) as DefaultPortModel;
+            let otherId = componentId(service.host);
+            let otherNode = nodes.find(n => otherId === (n as DefaultNodeModel).getOptions().name) as DefaultNodeModel;
+            let providerPort = otherNode.getPort(service.port) as DefaultPortModel;
+            links.push(consumerPort.link(providerPort));
+        });
 	});
 
-    // TODO: add a step to create links between provides and consumes
+    for (let component of app.components) {
+        component.consumes?.forEach(service => {
+            //let port = node.getPort(service.port);
+        });
+    }
 
     links.forEach((link) => {
 		model.addLink(link);

@@ -1,4 +1,3 @@
-import { Component } from 'react';
 import { AppArray } from './Model'
 
 function StartComponent(args: string[], stdOutHandler?: AppArray.Model.CommandOutput, stdErrHandler?: AppArray.Model.CommandOutput, completionHandler?: AppArray.Model.CommandCompletion): AppArray.Model.CommandResult {
@@ -62,6 +61,6 @@ let Spreadsheet: AppArray.Model.Component = {
 }
 
 export const FO: AppArray.Model.Application = {
-    name: 'FO',
+    name: 'FOApp',
     components: [DB, EventBus, Cache, PositionService, Spreadsheet]
 }
