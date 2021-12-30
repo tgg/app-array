@@ -74,12 +74,6 @@ export function DiagramModelApplicationConverter(app: AppArray.Model.Application
         });
 	});
 
-    for (let component of app.components) {
-        component.consumes?.forEach(service => {
-            //let port = node.getPort(service.port);
-        });
-    }
-
     links.forEach((link) => {
 		model.addLink(link);
 	});
