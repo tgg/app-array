@@ -1,22 +1,70 @@
 import { AppArray } from './Model'
 
-function StartComponent(args: string[], stdOutHandler?: AppArray.Model.CommandOutput, stdErrHandler?: AppArray.Model.CommandOutput, completionHandler?: AppArray.Model.CommandCompletion): AppArray.Model.CommandResult {
-    let launchedAt = new Date();
-    console.log('started %s at: %s', args.join(', '), launchedAt.toISOString());
+function StartComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any> {
+    let startTrail = {
+        status: AppArray.Model.CommandStatus.STARTED,
+        at: new Date(),
+        by: 'me',
+        on : 'self'
+    };
+
+    console.log('starting %s at: %s', args.join(', '), startTrail.at.toISOString());
 
     return {
-        launchedAt: launchedAt,
-        status: AppArray.Model.CommandStatus.STARTED
+        launchTrail: startTrail,
+        channels: {
+            out: new AppArray.Model.Channel<Uint8Array>('dummy')
+        },
+        run() {
+            console.info('Starting!');
+
+            return new Promise((resolve, reject) => {
+                if (this.channels.out.onReceive) {
+                    let e = new TextEncoder();
+                    this.channels.out.onReceive(e.encode('Hello from'));
+                    this.channels.out.onReceive(e.encode('My callback'));
+                }
+
+                resolve({
+                    completedAt: new Date(),
+                    result: 'Bravo!'
+                })
+            })
+        }
     }
 }
 
-function StopComponent(args: string[], stdOutHandler?: AppArray.Model.CommandOutput, stdErrHandler?: AppArray.Model.CommandOutput, completionHandler?: AppArray.Model.CommandCompletion): AppArray.Model.CommandResult {
-    let launchedAt = new Date();
-    console.log('stopped %s at: %s', args.join(', '), launchedAt.toISOString());
+function StopComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any> {
+    let startTrail = {
+        status: AppArray.Model.CommandStatus.STARTED,
+        at: new Date(),
+        by: 'me',
+        on : 'self'
+    };
+
+    console.log('stopping %s at: %s', args.join(', '), startTrail.at.toISOString());
 
     return {
-        launchedAt: launchedAt,
-        status: AppArray.Model.CommandStatus.STOPPED
+        launchTrail: startTrail,
+        channels: {
+            out: new AppArray.Model.Channel<Uint8Array>('dummy')
+        },
+        run() {
+            console.info('Stopping!');
+
+            return new Promise((resolve, reject) => {
+                if (this.channels.out.onReceive) {
+                    let e = new TextEncoder();
+                    this.channels.out.onReceive(e.encode('Hello from'));
+                    this.channels.out.onReceive(e.encode('My callback'));
+                }
+
+                reject({
+                    completedAt: new Date(),
+                    result: 'Failed!'
+                })
+            })
+        }
     }
 }
 

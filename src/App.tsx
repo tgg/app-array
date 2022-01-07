@@ -85,70 +85,19 @@ class DemoWidget extends React.Component<{ model: DiagramModel; engine: DiagramE
 }
 
 function App() {
-  /*return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload again.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );*/
-  	/*let engine = createEngine();
-
-	//2) setup the diagram model
-	let model = new DiagramModel();
-
-	//3) create a default nodes
-	let nodesFrom: NodeModel[] = [];
-	let nodesTo: NodeModel[] = [];
-
-	nodesFrom.push(createNode('from-1'));
-	nodesFrom.push(createNode('from-2'));
-	nodesFrom.push(createNode('from-3'));
-
-	nodesTo.push(createNode('to-1'));
-	nodesTo.push(createNode('to-2'));
-	nodesTo.push(createNode('to-3'));
-
-	//4) link nodes together
-	let links = nodesFrom.map((node, index) => {
-		return connectNodes(node, nodesTo[index], engine);
-	});
-
-	// more links for more complicated diagram
-	links.push(connectNodes(nodesFrom[0], nodesTo[1], engine));
-	links.push(connectNodes(nodesTo[0], nodesFrom[1], engine));
-	links.push(connectNodes(nodesFrom[1], nodesTo[2], engine));
-
-	// initial random position
-	nodesFrom.forEach((node, index) => {
-		//node.setPosition(index * 70, index * 70);
-		model.addNode(node);
-	});
-
-	nodesTo.forEach((node, index) => {
-		//node.setPosition(index * 70, 100);
-		model.addNode(node);
-	});
-
-	links.forEach((link) => {
-		model.addLink(link);
-	});
-
-	engine.setModel(model);*/
-
 	let { model, engine } = DiagramModelApplicationConverter(FO);
 	console.info(model);
+	let eventBusStart = FO.components[1].commands?.start(['eventBusStart']);
+	console.info(eventBusStart);
+	let d = new TextDecoder();
+	eventBusStart!.channels.out.onReceive = (data: Uint8Array | null) => {
+		if (data) {
+			console.info(d.decode(data));
+		}
+		return true;
+	};
+
+	eventBusStart!.run();
 
 	return <DemoWidget model={model} engine={engine} />;
 }
