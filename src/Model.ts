@@ -1,7 +1,6 @@
-import { DefaultNodeFactory } from "@projectstorm/react-diagrams";
 
 export namespace AppArray.Model {
-    export enum CommandStatus {
+    export enum Status {
         UNKNOWN,
         STARTING,
         STARTED,
@@ -24,6 +23,13 @@ export namespace AppArray.Model {
         }
     }
 
+    export type Context = {
+        [key: string]: string;
+    }
+
+    // That's how to extend a type :-)
+    export type Environment = Context & { id: string }
+
     export type ChannelMap<S> = {
         [id: string]: Channel<S>;
     }
@@ -33,15 +39,15 @@ export namespace AppArray.Model {
         result: T,
     }
 
-    export interface CommandStatusTrail {
-        status: CommandStatus;
+    export interface StatusTrail {
+        status: Status;
         at: Date;
         by: string;
         on: string;
     }
 
     export interface Command<S,T> {
-        launchTrail: CommandStatusTrail;
+        launchTrail: StatusTrail;
         channels: ChannelMap<S>;
         // We could also have args here?
         run(): Promise<CommandResult<T>>;
@@ -60,7 +66,7 @@ export namespace AppArray.Model {
         [key: string]: string | string[];
     }
     export interface Element {
-        name: string;
+        id: string;
         tags?: Tags;
     }
     export type ElementMap = {
@@ -71,30 +77,29 @@ export namespace AppArray.Model {
     }
 
     export type BusinessObject = string;
-    export enum PortKind {
+    export enum PortKind { // Access Control?
         Read = 1 << 1,
         Write = 1 << 2,
-        ReadWrite = Read | Write // CRUD? + execute?
+        ReadWrite = Read | Write // CRUD? + execute? publish? subscribes?
     }
+    export type PortId = string;
     export type Port = {
-        id: string;
-        businessObject?: BusinessObject; // many?
+        id: PortId;
+        object?: BusinessObject;
         kind: PortKind;
-    }
-    export type Service<T> = {
-        host: T;
-        port: string;
+        protocol?: string;
     }
 
     export interface Component extends LiveElement {
-        instance?: string;
-        depends?: Component[];
+        type: 'component';
         provides?: Port[];
-        consumes?: Service<Application | Component>[];
+        consumes?: PortId[];
     }
+    // groups with composite pattern
     export interface Application extends LiveElement {
+        type: 'application';
         provides?: Port[];
-        consumes?: Service<Application>[];
+        consumes?: PortId[];
         components: Component[];
     }
 }

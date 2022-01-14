@@ -2,7 +2,7 @@ import { AppArray } from './Model'
 
 function StartComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any> {
     let startTrail = {
-        status: AppArray.Model.CommandStatus.STARTED,
+        status: AppArray.Model.Status.STARTED,
         at: new Date(),
         by: 'me',
         on : 'self'
@@ -36,7 +36,7 @@ function StartComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any>
 
 function StopComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any> {
     let startTrail = {
-        status: AppArray.Model.CommandStatus.STARTED,
+        status: AppArray.Model.Status.STARTED,
         at: new Date(),
         by: 'me',
         on : 'self'
@@ -69,46 +69,64 @@ function StopComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any> 
 }
 
 let DB: AppArray.Model.Component = {
-    name: 'Database',
-    tags: { group: 'core', type: 'database' }
+    id: 'Database',
+    type: 'component',
+    tags: { group: 'core', type: 'database' },
+    provides: [ {
+        id: 'raw data',
+        kind: AppArray.Model.PortKind.ReadWrite
+    }]
 }
 
 let EventBus: AppArray.Model.Component = {
-    name: 'EventBus',
+    id: 'EventBus',
+    type: 'component',
     tags: { group: 'core' },
     commands: {
         start: StartComponent,
         stop: StopComponent
-    }
+    },
+    provides: [ {
+        id: 'raw events',
+        kind: AppArray.Model.PortKind.ReadWrite
+    }]
 }
 
 let Cache: AppArray.Model.Component = {
-    name: 'Cache',
+    id: 'Cache',
+    type: 'component',
     tags: { group: 'core' },
-    depends: [EventBus, DB]
+    consumes: [
+        'raw events',
+        'raw data'
+    ]
 }
 
 let PositionService: AppArray.Model.Component = {
-    name: 'PositionService',
+    id: 'PositionService',
+    type: 'component',
     tags: { group: 'TradePosition' },
-    depends: [EventBus, DB],
     provides: [{
         id: '/api/Position',
-        businessObject: 'Position',
-        kind: AppArray.Model.PortKind.Read
-    }]
+        object: 'Position',
+        kind: AppArray.Model.PortKind.Read,
+        protocol: 'REST'
+    }],
+    consumes: [
+        'raw events',
+        'raw data'
+    ]
 }
 
 let Spreadsheet: AppArray.Model.Component = {
-    name: 'Spreadsheet',
+    id: 'Spreadsheet',
+    type: 'component',
     tags: { group: 'TradePosition' },
-    consumes: [{
-        host: PositionService,
-        port: '/api/Position'
-    }]
+    consumes: ['/api/Position']
 }
 
 export const FO: AppArray.Model.Application = {
-    name: 'FOApp',
+    id: 'FOApp',
+    type: 'application',
     components: [DB, EventBus, Cache, PositionService, Spreadsheet]
 }

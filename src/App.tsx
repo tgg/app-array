@@ -15,8 +15,8 @@ import createEngine, {
 import { DemoButton, DemoWorkspaceWidget } from './DemoWorkspaceWidget';
 import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { DemoCanvasWidget } from './DemoCanvasWidget';
-import { DiagramModelApplicationConverter } from './DiagramModelApplicationConverter';
 import { FO } from './ModelTest';
+import { SystemDiagramModel } from './SystemDiagramModel';
 
 function createNode(name: string): any {
 	return new DefaultNodeModel(name, 'rgb(0,192,255)');
@@ -85,8 +85,10 @@ class DemoWidget extends React.Component<{ model: DiagramModel; engine: DiagramE
 }
 
 function App() {
-	let { model, engine } = DiagramModelApplicationConverter(FO);
-	console.info(model);
+	let engine = createEngine();
+	console.info(JSON.stringify(FO));
+	let model = new SystemDiagramModel(FO);
+	engine.setModel(model);
 	let eventBusStart = FO.components[1].commands?.start(['eventBusStart']);
 	console.info(eventBusStart);
 	let d = new TextDecoder();
