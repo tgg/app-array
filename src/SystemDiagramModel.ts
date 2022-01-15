@@ -1,5 +1,6 @@
 import { DefaultNodeModel, DefaultPortModel, DiagramModel, DiagramModelGenerics, LinkModel, NodeModel } from "@projectstorm/react-diagrams";
 import { AppArray } from './Model'
+import { ComponentNodeModel } from './ComponentNodeModel'
 
 export class SystemDiagramModel<G extends DiagramModelGenerics = DiagramModelGenerics> extends DiagramModel {
     protected application: AppArray.Model.Application;
@@ -15,10 +16,10 @@ export class SystemDiagramModel<G extends DiagramModelGenerics = DiagramModelGen
     }
 
     createComponentNode(component: AppArray.Model.Component) {
-        return new DefaultNodeModel(component.id, 'rgb(0,192,255)');
+        return new ComponentNodeModel(component);
     }
     
-    createPort(node: DefaultNodeModel, name: string, label: string, isIn: boolean = true) {
+    createPort(node: ComponentNodeModel, name: string, label: string, isIn: boolean = true) {
         let port = node.getPort(name);
     
         if (port)
