@@ -22,20 +22,6 @@ function createNode(name: string): any {
 	return new DefaultNodeModel(name, 'rgb(0,192,255)');
 }
 
-let count = 0;
-
-function connectNodes(nodeFrom: any, nodeTo: any, engine: DiagramEngine) {
-	//just to get id-like structure
-	count++;
-	const portOut = nodeFrom.addPort(new DefaultPortModel(true, `${nodeFrom.name}-out-${count}`, 'Out'));
-	const portTo = nodeTo.addPort(new DefaultPortModel(false, `${nodeFrom.name}-to-${count}`, 'In'));
-	return portOut.link(portTo);
-
-	// ################# UNCOMMENT THIS LINE FOR PATH FINDING #############################
-	//return portOut.link(portTo, engine.getLinkFactories().getFactory(PathFindingLinkFactory.NAME));
-	// #####################################################################################
-}
-
 class DemoWidget extends React.Component<{ model: DiagramModel; engine: DiagramEngine }, any> {
 	engine: DagreEngine;
 
@@ -54,8 +40,6 @@ class DemoWidget extends React.Component<{ model: DiagramModel; engine: DiagramE
 
 	autoDistribute = () => {
 		this.engine.redistribute(this.props.model);
-
-		// only happens if pathfing is enabled (check line 25)
 		this.reroute();
 		this.props.engine.repaintCanvas();
 	};
@@ -75,7 +59,7 @@ class DemoWidget extends React.Component<{ model: DiagramModel; engine: DiagramE
 
 	render() {
 		return (
-			<DemoWorkspaceWidget buttons={<><DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton><DemoButton onClick={this.autoDistribute}>Second</DemoButton></>}>
+			<DemoWorkspaceWidget buttons={<DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton>}>
 				<DemoCanvasWidget>
 					<CanvasWidget engine={this.props.engine} />
 				</DemoCanvasWidget>
