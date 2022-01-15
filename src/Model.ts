@@ -1,28 +1,5 @@
 
 export namespace AppArray.Model {
-    export enum Status {
-        UNKNOWN,
-        STARTING,
-        STARTED,
-        RUNNING,
-        STOPPING,
-        STOPPED
-    }
-
-    export class Channel<S> {
-        readonly id: string;
-
-        constructor(id: string) {
-            this.id = id;
-        }
-
-        public onReceive?: (data: S | null) => boolean;
-        public canSend(): boolean { return false; };
-        public send(data: S): Promise<void> {
-            throw new Error('send not supported');
-        }
-    }
-
     export type Context = {
         [key: string]: string;
     }
@@ -30,33 +7,19 @@ export namespace AppArray.Model {
     // That's how to extend a type :-)
     export type Environment = Context & { id: string }
 
-    export type ChannelMap<S> = {
-        [id: string]: Channel<S>;
+    // These steps can contain platform dependent environments variables
+    // and app-array expanded context {{variables}}.
+    //
+    // (!) Security review needed here.
+    //
+    // TODO: add righst per command?
+    export type Command = {
+        type: string;
+        steps: string[];
     }
 
-    export interface CommandResult<T> {
-        completedAt: Date,
-        result: T,
-    }
-
-    export interface StatusTrail {
-        status: Status;
-        at: Date;
-        by: string;
-        on: string;
-    }
-
-    export interface Command<S,T> {
-        launchTrail: StatusTrail;
-        channels: ChannelMap<S>;
-        // We could also have args here?
-        run(): Promise<CommandResult<T>>;
-    }
-    export type CommandOutput = (out: string) => void;
-    export type CommandCompletion = (completionCode: number) => number;
-    export type CommandRunner<S,T> = (args: string[]) => Command<S,T>;
     export type CommandMap = {
-        [id: string]: CommandRunner<Uint8Array,any>;
+        [id: string]: Command;
     }
 
     export type Tags = {

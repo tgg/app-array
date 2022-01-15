@@ -6,7 +6,6 @@ import createEngine, {
 	DiagramModel,
 	DefaultNodeModel,
 	DefaultPortModel,
-	NodeModel,
 	DagreEngine,
 	DiagramEngine,
 	PathFindingLinkFactory
@@ -17,6 +16,7 @@ import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { DemoCanvasWidget } from './DemoCanvasWidget';
 import { FO } from './ModelTest';
 import { SystemDiagramModel } from './SystemDiagramModel';
+import { JavaScriptExecutor } from './Executor';
 
 function createNode(name: string): any {
 	return new DefaultNodeModel(name, 'rgb(0,192,255)');
@@ -89,17 +89,18 @@ function App() {
 	console.info(JSON.stringify(FO));
 	let model = new SystemDiagramModel(FO);
 	engine.setModel(model);
-	let eventBusStart = FO.components[1].commands?.start(['eventBusStart']);
-	console.info(eventBusStart);
+	let eventBusStartCommand = FO.components[1].commands?.start!;
+	let eventBusStart = new JavaScriptExecutor().runner(eventBusStartCommand.steps);
 	let d = new TextDecoder();
-	eventBusStart!.channels.out.onReceive = (data: Uint8Array | null) => {
+	let instance = eventBusStart({ id: 'empty'});
+	instance.channels.out.onReceive = (data: Uint8Array | null) => {
 		if (data) {
 			console.info(d.decode(data));
 		}
 		return true;
 	};
 
-	eventBusStart!.run();
+	instance.run([]);
 
 	return <DemoWidget model={model} engine={engine} />;
 }

@@ -1,22 +1,21 @@
 import { AppArray } from './Model'
+import { Channel, Cmd, Environment, Status } from './Executor'
 
-function StartComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any> {
+function StartComponent(context: Environment): Cmd<Uint8Array,any> {
     let startTrail = {
-        status: AppArray.Model.Status.STARTED,
+        status: Status.STARTED,
         at: new Date(),
         by: 'me',
         on : 'self'
     };
 
-    console.log('starting %s at: %s', args.join(', '), startTrail.at.toISOString());
-
     return {
         launchTrail: startTrail,
         channels: {
-            out: new AppArray.Model.Channel<Uint8Array>('dummy')
+            out: new Channel<Uint8Array>('dummy')
         },
-        run() {
-            console.info('Starting!');
+        run(args: string[]) {
+            console.log('starting %s at: %s', args.join(', '), startTrail.at.toISOString());
 
             return new Promise((resolve, reject) => {
                 if (this.channels.out.onReceive) {
@@ -34,23 +33,21 @@ function StartComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any>
     }
 }
 
-function StopComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any> {
+function StopComponent(context: Environment): Cmd<Uint8Array,any> {
     let startTrail = {
-        status: AppArray.Model.Status.STARTED,
+        status: Status.STARTED,
         at: new Date(),
         by: 'me',
         on : 'self'
     };
 
-    console.log('stopping %s at: %s', args.join(', '), startTrail.at.toISOString());
-
     return {
         launchTrail: startTrail,
         channels: {
-            out: new AppArray.Model.Channel<Uint8Array>('dummy')
+            out: new Channel<Uint8Array>('dummy')
         },
-        run() {
-            console.info('Stopping!');
+        run(args: string[]) {
+            console.log('stopping %s at: %s', args.join(', '), startTrail.at.toISOString());
 
             return new Promise((resolve, reject) => {
                 if (this.channels.out.onReceive) {
@@ -68,6 +65,10 @@ function StopComponent(args: string[]) : AppArray.Model.Command<Uint8Array,any> 
     }
 }
 
+// Gruik alert!
+(window as any)['StartComponent'] = StartComponent;
+(window as any)['StopComponent'] = StopComponent;
+
 let DB: AppArray.Model.Component = {
     id: 'Database',
     type: 'component',
@@ -83,8 +84,14 @@ let EventBus: AppArray.Model.Component = {
     type: 'component',
     tags: { group: 'core' },
     commands: {
-        start: StartComponent,
-        stop: StopComponent
+        start: {
+            type: 'javascript',
+            steps: ['StartComponent']
+        },
+        stop: {
+            type: 'javascript',
+            steps: ['StopComponent']
+        }
     },
     provides: [ {
         id: 'raw events',
