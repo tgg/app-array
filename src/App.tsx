@@ -3,9 +3,6 @@ import React from 'react';
 import './App.css';
 
 import createEngine, {
-	DiagramModel,
-	DefaultNodeModel,
-	DefaultPortModel,
 	DagreEngine,
 	DiagramEngine,
 	PathFindingLinkFactory
@@ -18,11 +15,7 @@ import { FO } from './ModelTest';
 import { SystemDiagramModel } from './SystemDiagramModel';
 import { JavaScriptExecutor } from './Executor';
 
-function createNode(name: string): any {
-	return new DefaultNodeModel(name, 'rgb(0,192,255)');
-}
-
-class DemoWidget extends React.Component<{ model: DiagramModel; engine: DiagramEngine }, any> {
+class DemoWidget extends React.Component<{ model: SystemDiagramModel; engine: DiagramEngine }, any> {
 	engine: DagreEngine;
 
 	constructor(props: any) {

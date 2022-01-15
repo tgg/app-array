@@ -62,7 +62,7 @@ export class JavaScriptExecutor implements Executor<Uint8Array,any>{
     type = 'javascript';
 
     runner(steps: string[]): (context: Environment) => Cmd<Uint8Array, any> {
-        if (steps.length != 1) {
+        if (steps.length !== 1) {
             throw new Error("Only one function call supported!");
         }
 
