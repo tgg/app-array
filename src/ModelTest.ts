@@ -12,7 +12,7 @@ function StartComponent(context: Environment): Cmd<Uint8Array,any> {
     return {
         launchTrail: startTrail,
         channels: {
-            out: new Channel<Uint8Array>('dummy')
+            out: new Channel<Uint8Array>('out')
         },
         run(args: string[]) {
             console.log('starting %s at: %s', args.join(', '), startTrail.at.toISOString());

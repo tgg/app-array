@@ -52,7 +52,7 @@ class DemoWidget extends React.Component<{ model: SystemDiagramModel; engine: Di
 
 	render() {
 		return (
-			<DemoWorkspaceWidget buttons={<DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton>}>
+			<DemoWorkspaceWidget buttons={<><DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton><DemoButton onClick={this.autoDistribute}>Load ...</DemoButton></>}>
 				<DemoCanvasWidget>
 					<CanvasWidget engine={this.props.engine} />
 				</DemoCanvasWidget>
@@ -69,7 +69,7 @@ function App() {
 	let eventBusStartCommand = FO.components[1].commands?.start!;
 	let eventBusStart = new JavaScriptExecutor().runner(eventBusStartCommand.steps);
 	let d = new TextDecoder();
-	let instance = eventBusStart({ id: 'empty'});
+	let instance = eventBusStart({ id: 'thisEnvironment'});
 	instance.channels.out.onReceive = (data: Uint8Array | null) => {
 		if (data) {
 			console.info(d.decode(data));
@@ -77,7 +77,7 @@ function App() {
 		return true;
 	};
 
-	instance.run([]);
+	instance.run(['Hello', 'world!']);
 
 	return <DemoWidget model={model} engine={engine} />;
 }

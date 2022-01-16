@@ -49,8 +49,6 @@ export interface Cmd<S,T> {
     channels: ChannelMap<S>;
     run(args: string[]): Promise<CommandResult<T>>;
 }
-export type CommandOutput = (out: string) => void;
-export type CommandCompletion = (completionCode: number) => number;
 export interface Executor<S,T> {
     runner(steps: string[]): (context: Environment) => Cmd<S,T>;
 }
