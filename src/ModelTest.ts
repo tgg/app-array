@@ -53,8 +53,9 @@ function StopComponent(context: Environment): Cmd<Uint8Array,any> {
             return new Promise((resolve, reject) => {
                 if (this.channels.out.onReceive) {
                     let e = new TextEncoder();
-                    this.channels.out.onReceive(e.encode('Hello from'));
-                    this.channels.out.onReceive(e.encode('My callback'));
+                    this.channels.out.onReceive(e.encode('Bye from'));
+                    this.channels.out.onReceive(e.encode('My other callback'));
+                    this.channels.out.onReceive(e.encode('Failing now'));
                 }
 
                 reject({

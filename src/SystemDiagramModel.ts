@@ -15,6 +15,10 @@ export class SystemDiagramModel<G extends DiagramModelGenerics = DiagramModelGen
         this.buildNodes();
     }
 
+    getApplication(): AppArray.Model.Application {
+        return this.application;
+    }
+
     createComponentNode(component: AppArray.Model.Component) {
         return new ComponentNodeModel(component);
     }

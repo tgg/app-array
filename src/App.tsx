@@ -15,7 +15,7 @@ import { FO } from './ModelTest';
 import { SystemDiagramModel } from './SystemDiagramModel';
 import { JavaScriptExecutor } from './Executor';
 
-class DemoWidget extends React.Component<{ model: SystemDiagramModel; engine: DiagramEngine }, any> {
+class SystemWidget extends React.Component<{ model: SystemDiagramModel; engine: DiagramEngine }, any> {
 	engine: DagreEngine;
 
 	constructor(props: any) {
@@ -50,9 +50,42 @@ class DemoWidget extends React.Component<{ model: SystemDiagramModel; engine: Di
 			.calculateRoutingMatrix();
 	}
 
+	startAll = () => {
+		console.info(this.props);
+		let app = this.props.model.getApplication();
+		let eventBusStartCommand = app.components[1].commands?.start!;
+		let eventBusStart = new JavaScriptExecutor().runner(eventBusStartCommand.steps);
+		let d = new TextDecoder();
+		let instance = eventBusStart({ id: 'thisEnvironment'});
+		instance.channels.out.onReceive = (data: Uint8Array | null) => {
+			if (data) {
+				console.info(d.decode(data));
+			}
+			return true;
+		};
+
+		instance.run(['Hello', 'world!']);
+	}
+
+	stopAll = () => {
+		let app = this.props.model.getApplication();
+		let eventBusStopCommand = app.components[1].commands?.stop!;
+		let eventBusStop = new JavaScriptExecutor().runner(eventBusStopCommand.steps);
+		let d = new TextDecoder();
+		let instance = eventBusStop({ id: 'thisEnvironment'});
+		instance.channels.out.onReceive = (data: Uint8Array | null) => {
+			if (data) {
+				console.info(d.decode(data));
+			}
+			return true;
+		};
+
+		instance.run(['Bye', 'world!']);
+	}
+
 	render() {
 		return (
-			<DemoWorkspaceWidget buttons={<><DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton><DemoButton onClick={this.autoDistribute}>Load ...</DemoButton></>}>
+			<DemoWorkspaceWidget buttons={<><DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton><DemoButton onClick={this.autoDistribute}>Load ...</DemoButton><DemoButton onClick={this.startAll}>Start All</DemoButton><DemoButton onClick={this.stopAll}>Stop All</DemoButton></>}>
 				<DemoCanvasWidget>
 					<CanvasWidget engine={this.props.engine} />
 				</DemoCanvasWidget>
@@ -66,20 +99,8 @@ function App() {
 	console.info(JSON.stringify(FO));
 	let model = new SystemDiagramModel(FO);
 	engine.setModel(model);
-	let eventBusStartCommand = FO.components[1].commands?.start!;
-	let eventBusStart = new JavaScriptExecutor().runner(eventBusStartCommand.steps);
-	let d = new TextDecoder();
-	let instance = eventBusStart({ id: 'thisEnvironment'});
-	instance.channels.out.onReceive = (data: Uint8Array | null) => {
-		if (data) {
-			console.info(d.decode(data));
-		}
-		return true;
-	};
 
-	instance.run(['Hello', 'world!']);
-
-	return <DemoWidget model={model} engine={engine} />;
+	return <SystemWidget model={model} engine={engine} />;
 }
 
 export default App;
