@@ -1,12 +1,6 @@
+import { Environment } from './Environment'
 
 export namespace AppArray.Model {
-    export type Context = {
-        [key: string]: string;
-    }
-
-    // That's how to extend a type :-)
-    export type Environment = Context & { id: string }
-
     // These steps can contain platform dependent environments variables
     // and app-array expanded context {{variables}}.
     //
@@ -64,5 +58,6 @@ export namespace AppArray.Model {
         provides?: Port[];
         consumes?: PortId[];
         components: Component[];
+        environments?: Environment[];
     }
 }

@@ -1,5 +1,6 @@
 import { AppArray } from './Model'
-import { Channel, Cmd, Environment, Status } from './Executor'
+import { Channel, Cmd, Status } from './Executor'
+import { Environment } from './Environment'
 
 function StartComponent(context: Environment): Cmd<Uint8Array,any> {
     let startTrail = {
