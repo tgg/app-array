@@ -1,0 +1,87 @@
+{
+    "id": "FOApp",
+    "type": "application",
+    "components": [
+        {
+            "id": "Oracle",
+            "type": "component",
+            "tags": {
+                "group": "core",
+                "type": "database"
+            },
+            "provides": [
+                {
+                    "id": "raw data",
+                    "kind": 6
+                }
+            ]
+        },
+        {
+            "id": "EventBus",
+            "type": "component",
+            "tags": {
+                "group": "core"
+            },
+            "commands": {
+                "start": {
+                    "type": "javascript",
+                    "steps": [
+                        "StartComponent"
+                    ]
+                },
+                "stop": {
+                    "type": "javascript",
+                    "steps": [
+                        "StopComponent"
+                    ]
+                }
+            },
+            "provides": [
+                {
+                    "id": "raw events",
+                    "kind": 6
+                }
+            ]
+        },
+        {
+            "id": "Cache",
+            "type": "component",
+            "tags": {
+                "group": "core"
+            },
+            "consumes": [
+                "raw events",
+                "raw data"
+            ]
+        },
+        {
+            "id": "PositionService",
+            "type": "component",
+            "tags": {
+                "group": "TradePosition"
+            },
+            "provides": [
+                {
+                    "id": "/api/Position",
+                    "object": "Position",
+                    "kind": 2,
+                    "protocol": "REST"
+                }
+            ],
+            "consumes": [
+                "raw events",
+                "raw data"
+            ]
+        },
+        {
+            "id": "Spreadsheet",
+            "type": "component",
+            "tags": {
+                "group": "TradePosition"
+            },
+            "consumes": [
+                "/api/Position"
+            ]
+        }
+    ]
+}
