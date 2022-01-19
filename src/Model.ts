@@ -20,7 +20,7 @@ export namespace AppArray.Model {
         // e.g. "lang"= ["c++", "java"], "src" = "https://github.com/user/repo",
         // compile time or runtime deps, documentation, URL, etc.
         // group
-        [key: string]: string | string[];
+        [key: string]: string;
     }
     export interface Element {
         id: string;
