@@ -16,6 +16,7 @@ import { FO } from './ModelTest';
 import { SystemDiagramModel } from './SystemDiagramModel';
 import { JavaScriptExecutor } from './Executor';
 import { AppArray } from './Model';
+import { ComponentNodeFactory } from './ComponentNodeFactory';
 
 const Input = styled.input`
     display: none;
@@ -147,6 +148,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: S
 
 function App() {
 	let engine = createEngine();
+	engine.getNodeFactories().registerFactory(new ComponentNodeFactory());
 
 	return <SystemWidget engine={engine} />;
 }
