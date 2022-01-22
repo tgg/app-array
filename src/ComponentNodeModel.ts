@@ -1,5 +1,5 @@
 import { DefaultNodeModel } from "@projectstorm/react-diagrams";
-import { has } from "lodash";
+
 import { AppArray } from './Model';
 
 export class ComponentNodeModel extends DefaultNodeModel {
