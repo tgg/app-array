@@ -71,71 +71,44 @@ function StopComponent(context: Environment): Cmd<Uint8Array,any> {
 (window as any)['StartComponent'] = StartComponent;
 (window as any)['StopComponent'] = StopComponent;
 
-let DB: AppArray.Model.Component = {
-    id: 'Database',
+let Producer: AppArray.Model.Component = {
+    id: 'Producer',
     type: 'component',
-    tags: { group: 'core', type: 'database' },
-    provides: [ {
-        id: 'raw data',
-        kind: AppArray.Model.PortKind.ReadWrite
-    }]
-}
-
-let EventBus: AppArray.Model.Component = {
-    id: 'EventBus',
-    type: 'component',
-    tags: { group: 'core' },
     commands: {
         start: {
-            type: 'javascript',
-            steps: ['StartComponent']
+            type: 'shell',
+            steps: ['/app/producer/start.sh']
         },
         stop: {
-            type: 'javascript',
-            steps: ['StopComponent']
+            type: 'shell',
+            steps: ['/app/producer/stop.sh']
         }
     },
     provides: [ {
-        id: 'raw events',
-        kind: AppArray.Model.PortKind.ReadWrite
+        id: 'produced files',
+        kind: AppArray.Model.PortKind.Read
     }]
 }
 
-let Cache: AppArray.Model.Component = {
-    id: 'Cache',
+let Consumer: AppArray.Model.Component = {
+    id: 'Consumer',
     type: 'component',
-    tags: { group: 'core' },
-    consumes: [
-        'raw events',
-        'raw data'
-    ]
-}
-
-let PositionService: AppArray.Model.Component = {
-    id: 'PositionService',
-    type: 'component',
-    tags: { group: 'TradePosition' },
-    provides: [{
-        id: '/api/Position',
-        object: 'Position',
-        kind: AppArray.Model.PortKind.Read,
-        protocol: 'REST'
+    tags: { type: 'batch' },
+    commands: {
+        start: {
+            type: 'shell',
+            steps: ['/app/consumer/run.sh']
+        }
+    },
+    provides: [ {
+        id: 'zip file',
+        kind: AppArray.Model.PortKind.Read
     }],
-    consumes: [
-        'raw events',
-        'raw data'
-    ]
+    consumes: ['produced files']
 }
 
-let Spreadsheet: AppArray.Model.Component = {
-    id: 'Spreadsheet',
-    type: 'component',
-    tags: { group: 'TradePosition' },
-    consumes: ['/api/Position']
-}
-
-export const FO: AppArray.Model.Application = {
-    id: 'FOApp',
+export const Demo: AppArray.Model.Application = {
+    id: 'Demo',
     type: 'application',
-    components: [DB, EventBus, Cache, PositionService, Spreadsheet]
+    components: [Producer, Consumer]
 }

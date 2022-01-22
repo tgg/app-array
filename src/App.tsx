@@ -12,7 +12,7 @@ import styled from '@emotion/styled';
 import { DemoButton, DemoWorkspaceWidget } from './DemoWorkspaceWidget';
 import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { DemoCanvasWidget } from './DemoCanvasWidget';
-import { FO } from './ModelTest';
+import { Demo } from './ModelTest';
 import { SystemDiagramModel } from './SystemDiagramModel';
 import { JavaScriptExecutor } from './Executor';
 import { AppArray } from './Model';
@@ -60,8 +60,8 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: S
 
 	constructor(props: any) {
 		super(props);
-		console.info(JSON.stringify(FO));
-		const model = new SystemDiagramModel(FO);
+		console.info(JSON.stringify(Demo));
+		const model = new SystemDiagramModel(Demo);
 		props.engine.setModel(model);
 		this.engine = new DagreEngine({
 			graph: {
