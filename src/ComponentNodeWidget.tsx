@@ -3,6 +3,7 @@ import { DefaultPortLabel,DiagramEngine, PortModelAlignment, PortWidget } from '
 import styled from '@emotion/styled';
 import { ComponentNodeModel } from './ComponentNodeModel';
 import { map } from 'lodash';
+import { isThisTypeNode } from 'typescript';
 export interface ComponentNodeWidgetProps {
 	node: ComponentNodeModel;
 	engine: DiagramEngine;
@@ -10,14 +11,18 @@ export interface ComponentNodeWidgetProps {
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
 export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProps>  {
+	Border = styled_1.default.div `
+	
+	`;
 	Node = styled_1.default.div `
+		background-clip: content-box;
 		background-color: ${(p: { background: any; }) => p.background};
 		border-radius: 5px;
 		font-family: sans-serif;
 		color: white;
-		border: solid 2px black;
 		overflow: visible;
 		font-size: 11px;
+		
 	`;
 	Title = styled_1.default.div `
 		background: rgba(0, 0, 0, 0.3);
@@ -88,6 +93,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 			color: #cf142b;
 		}
 	`;
+	Icon = styled_1.default('i')`
+	`;
 
 	private hasStart:boolean;
 	private hasStop:boolean;
@@ -109,32 +116,64 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 				this.hasStop=true;
 			}
 		}
+
+		
 		
     }
 	
 	
 	
 	render() {
-        return (React.createElement(this.Node, { "data-default-node-name": this.props.node.getOptions().name, selected: this.props.node.isSelected(), background: this.props.node.getOptions().color },
-            React.createElement(this.Title, null,
-                React.createElement(this.TitleName, null, this.props.node.getOptions().name)),
-            React.createElement(this.Ports, null,
-                React.createElement(this.PortsContainer, null, map(this.props.node.getInPorts(), this.generatePort)),
-                React.createElement(this.PortsContainer, null, map(this.props.node.getOutPorts(), this.generatePort))),
-				React.createElement(this.Title, null,
-					React.createElement(this.ButtonsPanel, null, 
-						this.hasStart?React.createElement(this.Button_start, null,
-												React.createElement('i', {class:"fa fa-play-circle"},null)
-											)
-											:null,
-						this.hasStop?React.createElement(this.Button_stop, null, 
-												React.createElement('i', {class:"fa fa-stop-circle"},null)
-											)
-											:null,
-							),
-						)
+        return (
+			
+				<>
+				<this.Border>
+					<this.Node
+						background={this.props.node.getOptions().color}
+						selected={this.props.node.isSelected()}
+						data-default-node-name={this.props.node.getOptions().name}>
+
+						<this.Title>
+							<this.TitleName>{this.props.node.getOptions().name}</this.TitleName>
+						</this.Title>
+
+						<this.Ports>
+							<this.PortsContainer>
+
+							</this.PortsContainer>
+								{map(this.props.node.getInPorts(), this.generatePort)}
+							<this.PortsContainer>
+								{map(this.props.node.getOutPorts(), this.generatePort)}
+							</this.PortsContainer>
+
+						</this.Ports>
+
+						<this.ButtonsPanel>
+							{this.hasStart &&
+								<this.Button_start >
+									<this.Icon className="fa fa-play-circle"></this.Icon>
+								</this.Button_start>
+							}
+
+							{this.hasStop &&
+								<this.Button_stop >
+									<this.Icon className="fa fa-stop-circle"></this.Icon>
+								</this.Button_stop>
+							}
+							
+						</this.ButtonsPanel>
+
+
+					</this.Node>
+				</this.Border>
 				
-				));
+				</>
+				
+
+				
+				
+				
+				);
     }
 	
 }
