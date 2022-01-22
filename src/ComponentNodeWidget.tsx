@@ -139,9 +139,9 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 						<this.Ports>
 							<this.PortsContainer>
-
-							</this.PortsContainer>
 								{map(this.props.node.getInPorts(), this.generatePort)}
+							</this.PortsContainer>
+
 							<this.PortsContainer>
 								{map(this.props.node.getOutPorts(), this.generatePort)}
 							</this.PortsContainer>
