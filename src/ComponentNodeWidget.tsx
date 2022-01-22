@@ -4,6 +4,7 @@ import styled from '@emotion/styled';
 import { ComponentNodeModel } from './ComponentNodeModel';
 import { map } from 'lodash';
 import { isThisTypeNode } from 'typescript';
+import { Status } from './Executor';
 export interface ComponentNodeWidgetProps {
 	node: ComponentNodeModel;
 	engine: DiagramEngine;
@@ -98,6 +99,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 	private hasStart:boolean;
 	private hasStop:boolean;
+	private status: Status = Status.UNKNOWN;
 
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
