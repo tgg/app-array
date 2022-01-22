@@ -106,19 +106,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
         this.generatePort = (port) => {
             return React.createElement(DefaultPortLabelWidget_1.DefaultPortLabel, { engine: this.props.engine, port: port, key: port.getID() });
         };
-		this.hasStart=false;
-		this.hasStop=false;
-		if(this.props.node.component.commands){
-			if("start" in this.props.node.component.commands){
-				this.hasStart=true;
-			}
-			if("stop" in this.props.node.component.commands){
-				this.hasStop=true;
-			}
-		}
-
-		
-		
+		this.hasStart = this.props.node.hasCommand('start');
+		this.hasStop = this.props.node.hasCommand('stop');
     }
 	
 	

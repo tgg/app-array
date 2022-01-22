@@ -1,4 +1,5 @@
 import { DefaultNodeModel } from "@projectstorm/react-diagrams";
+import { has } from "lodash";
 import { AppArray } from './Model';
 
 export class ComponentNodeModel extends DefaultNodeModel {
@@ -13,5 +14,9 @@ export class ComponentNodeModel extends DefaultNodeModel {
         });
 
         this.component = component;
+    }
+
+    hasCommand(name: string) {
+        return this.component.commands ? name in this.component.commands : false;
     }
 }
