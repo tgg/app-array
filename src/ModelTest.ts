@@ -77,11 +77,11 @@ let Producer: AppArray.Model.Component = {
     commands: {
         start: {
             type: 'shell',
-            steps: ['/app/producer/start.sh']
+            steps: ['/app/bin/server.sh start']
         },
         stop: {
             type: 'shell',
-            steps: ['/app/producer/stop.sh']
+            steps: ['/app/bin/server.sh stop']
         }
     },
     provides: [ {
@@ -97,7 +97,7 @@ let Consumer: AppArray.Model.Component = {
     commands: {
         start: {
             type: 'shell',
-            steps: ['/app/consumer/run.sh']
+            steps: ['ls -l /usr']
         }
     },
     provides: [ {

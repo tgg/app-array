@@ -4,7 +4,7 @@ import styled from '@emotion/styled';
 import { ComponentNodeModel } from './ComponentNodeModel';
 import { map } from 'lodash';
 import { isThisTypeNode } from 'typescript';
-import { Status } from './Executor';
+import { Executor, ShellExecutor, Status } from './Executor';
 export interface ComponentNodeWidgetProps {
 	node: ComponentNodeModel;
 	engine: DiagramEngine;
@@ -100,6 +100,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStart:boolean;
 	private hasStop:boolean;
 	private status: Status = Status.UNKNOWN;
+	private executor: Executor<Uint8Array,any>;
 
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
@@ -110,9 +111,45 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
         };
 		this.hasStart = this.props.node.hasCommand('start');
 		this.hasStop = this.props.node.hasCommand('stop');
+
+		const socket = new WebSocket("ws://localhost:8080/shell");
+
+		socket.onopen = (e) => {
+			console.info('Status: Connected');
+		};
+
+		this.executor = new ShellExecutor(socket);
     }
 	
-	
+	start = () => {
+		let cmd = this.props.node.component.commands?.start!;
+		let runner = this.executor.runner(cmd.steps);
+		let d = new TextDecoder();
+		let instance = runner({ id: 'thisEnvironment' });
+		instance.channels.out.onReceive = (data: Uint8Array | null) => {
+			if (data) {
+				console.info(d.decode(data));
+			}
+			return true;
+		};
+		
+		instance.run(['Hello', 'world!']);
+	}
+
+	stop = () => {
+		let cmd = this.props.node.component.commands?.stop!;
+		let runner = this.executor.runner(cmd.steps);
+		let d = new TextDecoder();
+		let instance = runner({ id: 'thisEnvironment' });
+		instance.channels.out.onReceive = (data: Uint8Array | null) => {
+			if (data) {
+				console.info(d.decode(data));
+			}
+			return true;
+		};
+		
+		instance.run([]);
+	}
 	
 	render() {
         return (
@@ -141,13 +178,13 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 						<this.ButtonsPanel>
 							{this.hasStart &&
-								<this.Button_start >
+								<this.Button_start onClick={this.start}>
 									<this.Icon className="fa fa-play-circle"></this.Icon>
 								</this.Button_start>
 							}
 
 							{this.hasStop &&
-								<this.Button_stop >
+								<this.Button_stop onClick={this.stop}>
 									<this.Icon className="fa fa-stop-circle"></this.Icon>
 								</this.Button_stop>
 							}

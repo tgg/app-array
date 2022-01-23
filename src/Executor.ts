@@ -63,3 +63,56 @@ export class JavaScriptExecutor implements Executor<Uint8Array,any>{
         return (window as any)[name];
     }
 }
+
+export class ShellExecutor implements Executor<Uint8Array,any> {
+        type = 'shell';
+        socket: WebSocket;
+        
+        constructor(socket: WebSocket) {
+            this.socket = socket;
+        }
+        
+        runner(steps: string[]): (context: Environment) => Cmd<Uint8Array, any> {
+            const out = new Channel<Uint8Array>('out');
+            const te = new TextEncoder();
+            
+            this.socket.onmessage = (e) => {
+                if (out.onReceive) {
+                    out.onReceive(te.encode(e.data));
+                }
+            };
+            
+            let startTrail = {
+                status: Status.STARTED,
+                at: new Date(),
+                by: 'me',
+                on : 'self'
+            };
+            
+            return (ctx: Environment) => {
+                let sock = this.socket;
+                
+                return {
+                    launchTrail: startTrail,
+                    channels: {
+                        out: out
+                    },
+                    run(args: string[]) {
+                        return new Promise((resolve, reject) => {
+                            // Loop with each command
+                            steps.forEach(step => {
+                                sock.send(step);
+                            });
+                            
+                            // TODO: Wait until nothing left to read
+                            
+                            resolve({
+                                completedAt: new Date(),
+                                result: 'Bravo!'
+                            })
+                        })
+                    }
+                }
+            }
+        }
+    }
