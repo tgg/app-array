@@ -118,7 +118,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
         return (
 			
 				<>
-				<this.Border>
+				<this.Border className={this.status}>
 					<this.Node
 						background={this.props.node.getOptions().color}
 						selected={this.props.node.isSelected()}
