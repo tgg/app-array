@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "follow-redirects": ">=1.14.7",
     "@microsoft/signalr": "^6.0.1",
     "@projectstorm/react-diagrams": "^6.6.1",
     "@testing-library/jest-dom": "^5.16.1",
