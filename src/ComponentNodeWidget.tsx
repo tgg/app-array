@@ -97,6 +97,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	Icon = styled_1.default('i')`
 	`;
 
+	
 	private hasStart:boolean;
 	private hasStop:boolean;
 	private status: Status = Status.UNKNOWN;
@@ -111,8 +112,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
         };
 		this.hasStart = this.props.node.hasCommand('start');
 		this.hasStop = this.props.node.hasCommand('stop');
-
-		const socket = new WebSocket("ws://localhost:8080/shell");
+		console.log(process.env.REACT_APP_BACKEND_HOST)
+		const socket = new WebSocket("ws://"+process.env.REACT_APP_BACKEND_HOST+"/shell");
 
 		socket.onopen = (e) => {
 			console.info('Status: Connected');

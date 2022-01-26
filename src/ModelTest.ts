@@ -6,7 +6,7 @@ let Producer: AppArray.Model.Component = {
     commands: {
         start: {
             type: 'shell',
-            steps: ['/app/bin/server.sh start']
+            steps: ['ls','pwd']
         },
         stop: {
             type: 'shell',

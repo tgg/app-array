@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 //import logo from './logo.svg';
 import './App.css';
-
 import createEngine, {
 	DagreEngine,
 	DiagramEngine,
@@ -25,7 +24,6 @@ const Input = styled.input`
 interface LoadButtonProps {
 	onModelChange: (model: SystemDiagramModel) => void;
 }
-
 const LoadButton = ({ onModelChange }: LoadButtonProps) => {
 	const inputFile = useRef(null)
 
