@@ -1,15 +1,9 @@
-# syntax=docker/dockerfile:1
-# build part
-FROM node:16 as envBuild
+FROM node:16
+ENV NODE_ENV=development 
+RUN mkdir /app
 WORKDIR /app
-ENV PATH /app/node_modules/.bin:$PATH
 COPY ["package.json", "package-lock.json*", "./"]
-RUN npm ci --silent
-COPY . ./
-RUN npm run build
-
-#run part
-FROM nginx:stable-alpine
-COPY --from=envBuild /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["npm", "start"]
