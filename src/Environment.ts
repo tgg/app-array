@@ -1,5 +1,5 @@
 export type Context = {
-    [key: string]: string;
+    [key: string]: any;
 }
 
 // That's how to extend a type :-)

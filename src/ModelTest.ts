@@ -1,12 +1,12 @@
 import { AppArray } from './Model'
 
-let Producer: AppArray.Model.Component = {
-    id: 'Producer',
+let Copier: AppArray.Model.Component = {
+    id: 'Copier',
     type: 'component',
     commands: {
         start: {
             type: 'shell',
-            steps: ['ls','pwd']
+            steps: ['/app/bin/server.sh start']
         },
         stop: {
             type: 'shell',
@@ -18,13 +18,17 @@ let Producer: AppArray.Model.Component = {
         }
     },
     provides: [ {
-        id: 'produced files',
+        id: 'source',
+        kind: AppArray.Model.PortKind.Write
+    },
+    {
+        id: 'destination',
         kind: AppArray.Model.PortKind.Read
     }]
 }
 
-let Consumer: AppArray.Model.Component = {
-    id: 'Consumer',
+let Zipper: AppArray.Model.Component = {
+    id: 'Zipper',
     type: 'component',
     tags: { type: 'batch' },
     commands: {
@@ -34,14 +38,28 @@ let Consumer: AppArray.Model.Component = {
         }
     },
     provides: [ {
-        id: 'zip file',
+        id: 'output',
         kind: AppArray.Model.PortKind.Read
     }],
-    consumes: ['produced files']
+    consumes: ['destination']
 }
 
 export const Demo: AppArray.Model.Application = {
     id: 'Demo',
     type: 'application',
-    components: [Producer, Consumer]
+    components: [Copier, Zipper],
+    environments: [
+        {
+            id: 'my own machine',
+            Copier: {
+                host: 'localhost',
+                source: 'file:///tmp/app/in',
+                destination: 'file:///tmp/app/out'
+            },
+            Zipper: {
+                host: 'localhost',
+                output: 'file:///tmp/my.tgz'
+            }
+        }
+    ]
 }
