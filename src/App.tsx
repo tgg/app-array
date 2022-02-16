@@ -13,7 +13,6 @@ import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { DemoCanvasWidget } from './DemoCanvasWidget';
 import { Demo } from './ModelTest';
 import { SystemDiagramModel } from './SystemDiagramModel';
-import { JavaScriptExecutor } from './Executor';
 import { AppArray } from './Model';
 import { ComponentNodeFactory } from './ComponentNodeFactory';
 
@@ -95,47 +94,18 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: S
 			.calculateRoutingMatrix();
 	}
 
-	startAll = () => {
-		console.info(this.props);
-		let app = this.state.model.getApplication();
-		let eventBusStartCommand = app.components[1].commands?.start!;
-		let eventBusStart = new JavaScriptExecutor().runner(eventBusStartCommand.steps);
-		let d = new TextDecoder();
-		let instance = eventBusStart({ id: 'thisEnvironment' });
-		instance.channels.out.onReceive = (data: Uint8Array | null) => {
-			if (data) {
-				console.info(d.decode(data));
-			}
-			return true;
-		};
-
-		instance.run(['Hello', 'world!']);
-	}
-
-	stopAll = () => {
-		let app = this.state.model.getApplication();
-		let eventBusStopCommand = app.components[1].commands?.stop!;
-		let eventBusStop = new JavaScriptExecutor().runner(eventBusStopCommand.steps);
-		let d = new TextDecoder();
-		let instance = eventBusStop({ id: 'thisEnvironment' });
-		instance.channels.out.onReceive = (data: Uint8Array | null) => {
-			if (data) {
-				console.info(d.decode(data));
-			}
-			return true;
-		};
-
-		instance.run(['Bye', 'world!']);
-	}
-
 	render() {
 		return (
-			<DemoWorkspaceWidget buttons={<><DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton><LoadButton onModelChange={(model) => {
-				this.props.engine.setModel(model);
-				this.setState({ model }, () => {
-					this.autoDistribute();
-				})
-			}} /><DemoButton onClick={this.startAll}>Start All</DemoButton><DemoButton onClick={this.stopAll}>Stop All</DemoButton></>}>
+			<DemoWorkspaceWidget buttons={
+				<>
+					<DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton>
+					<LoadButton onModelChange={(model) => {
+						this.props.engine.setModel(model);
+						this.setState({ model }, () => {
+							this.autoDistribute();
+						})
+					}}/>
+				</>}>
 				<DemoCanvasWidget>
 					<CanvasWidget engine={this.props.engine} />
 				</DemoCanvasWidget>
