@@ -1,87 +1,78 @@
 {
-    "id": "FOApp",
+    "id": "Demo",
     "type": "application",
     "components": [
         {
-            "id": "Oracle",
+            "id": "Copier",
             "type": "component",
-            "tags": {
-                "group": "core",
-                "type": "database"
-            },
-            "provides": [
-                {
-                    "id": "raw data",
-                    "kind": 6
-                }
-            ]
-        },
-        {
-            "id": "EventBus",
-            "type": "component",
-            "tags": {
-                "group": "core"
-            },
             "commands": {
                 "start": {
-                    "type": "javascript",
+                    "type": "shell",
                     "steps": [
-                        "StartComponent"
+                        "/app/bin/server.sh start"
                     ]
                 },
                 "stop": {
-                    "type": "javascript",
+                    "type": "shell",
                     "steps": [
-                        "StopComponent"
+                        "/app/bin/server.sh stop"
+                    ]
+                },
+                "status": {
+                    "type": "shell",
+                    "steps": [
+                        "/app/bin/server.sh status"
                     ]
                 }
             },
             "provides": [
                 {
-                    "id": "raw events",
-                    "kind": 6
+                    "id": "source",
+                    "kind": 4
+                },
+                {
+                    "id": "destination",
+                    "kind": 2
                 }
             ]
         },
         {
-            "id": "Cache",
+            "id": "Zipper",
             "type": "component",
             "tags": {
-                "group": "core"
+                "type": "batch"
             },
-            "consumes": [
-                "raw events",
-                "raw data"
-            ]
-        },
-        {
-            "id": "PositionService",
-            "type": "component",
-            "tags": {
-                "group": "TradePosition"
+            "commands": {
+                "start": {
+                    "type": "shell",
+                    "steps": [
+                        "/app/bin/batch.sh"
+                    ]
+                }
             },
             "provides": [
                 {
-                    "id": "/api/Position",
-                    "object": "Position",
-                    "kind": 2,
-                    "protocol": "REST"
+                    "id": "output",
+                    "kind": 2
                 }
             ],
             "consumes": [
-                "raw events",
-                "raw data"
+                "destination"
             ]
-        },
+        }
+    ],
+    "environments": [
         {
-            "id": "Spreadsheet",
-            "type": "component",
-            "tags": {
-                "group": "TradePosition"
+            "id": "my own machine",
+            "Copier": {
+                "host": "localhost",
+                "source": "file:///tmp/app/in",
+                "destination": "file:///tmp/app/out"
             },
-            "consumes": [
-                "/api/Position"
-            ]
+            "Zipper": {
+                "host": "localhost",
+                "output": "file:///tmp/my.tgz"
+            }
         }
     ]
 }
