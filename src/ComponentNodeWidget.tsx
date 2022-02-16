@@ -100,7 +100,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	
 	private hasStart:boolean;
 	private hasStop:boolean;
-	private status: Status = Status.UNKNOWN;
+	private status: string = 'UNKNOWN';
 	private executor: Executor<Uint8Array,any>;
 
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
@@ -112,8 +112,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
         };
 		this.hasStart = this.props.node.hasCommand('start');
 		this.hasStop = this.props.node.hasCommand('stop');
-		console.log(process.env.REACT_APP_BACKEND_HOST)
-		const socket = new WebSocket("ws://"+process.env.REACT_APP_BACKEND_HOST+"/shell");
+		//console.log(process.env.REACT_APP_BACKEND_HOST)
+		const socket = new WebSocket("ws://localhost:8080/shell");
 
 		socket.onopen = (e) => {
 			console.info('Status: Connected');
@@ -124,6 +124,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	
 	start = () => {
 		let cmd = this.props.node.component.commands?.start!;
+		this.status = 'STARTING';
 		let runner = this.executor.runner(cmd.steps);
 		let d = new TextDecoder();
 		let instance = runner({ id: 'thisEnvironment' });
@@ -134,11 +135,12 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 			return true;
 		};
 		
-		instance.run(['Hello', 'world!']);
+		instance.run([]);
 	}
 
 	stop = () => {
 		let cmd = this.props.node.component.commands?.stop!;
+		this.status = 'STOPPING';
 		let runner = this.executor.runner(cmd.steps);
 		let d = new TextDecoder();
 		let instance = runner({ id: 'thisEnvironment' });
@@ -154,8 +156,6 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	
 	render() {
         return (
-			
-				<>
 				<this.Border className={this.status}>
 					<this.Node
 						background={this.props.node.getOptions().color}
@@ -194,15 +194,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 
 					</this.Node>
-				</this.Border>
-				
-				</>
-				
-
-				
-				
-				
-				);
+				</this.Border>);
     }
 	
 }
