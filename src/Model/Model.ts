@@ -1,4 +1,4 @@
-import { Environment } from './Environment'
+import { Environment } from '../Environment'
 
 export namespace AppArray.Model {
     // These steps can contain platform dependent environments variables
@@ -59,5 +59,6 @@ export namespace AppArray.Model {
         consumes?: PortId[];
         components: Component[];
         environments?: Environment[];
+        filename?: String;
     }
 }

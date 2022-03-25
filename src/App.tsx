@@ -1,64 +1,28 @@
-import React, { useRef } from 'react';
-//import logo from './logo.svg';
+import React from 'react';
 import './App.css';
 import createEngine, {
 	DagreEngine,
 	DiagramEngine,
+	DiagramModel,
 	PathFindingLinkFactory
 } from '@projectstorm/react-diagrams';
-import styled from '@emotion/styled';
-
-import { DemoButton, DemoWorkspaceWidget } from './DemoWorkspaceWidget';
 import { CanvasWidget } from '@projectstorm/react-canvas-core';
-import { DemoCanvasWidget } from './DemoCanvasWidget';
-import { Demo } from './ModelTest';
-import { SystemDiagramModel } from './SystemDiagramModel';
-import { AppArray } from './Model';
-import { ComponentNodeFactory } from './ComponentNodeFactory';
 
-const Input = styled.input`
-    display: none;
-`
+import { DemoButton, DemoWorkspaceWidget } from './Components/DemoWorkspaceWidget';
+import { DemoCanvasWidget } from './Components/DemoCanvasWidget';
+import { ComponentNodeFactory } from './Components/Diagram/ComponentNodeFactory';
+import { LoadButton } from './Components/LoadButton';
+import { ClearButton } from './Components/ClearButton';
+import KeepModelCheckbox from './Components/KeepModelCheckbox';
+import { AppArray } from './Model/CacheInfo';
 
-interface LoadButtonProps {
-	onModelChange: (model: SystemDiagramModel) => void;
-}
-const LoadButton = ({ onModelChange }: LoadButtonProps) => {
-	const inputFile = useRef(null)
-
-	const handleFileUpload = (e: any) => {
-		const { files } = e.target;
-		if (files && files.length) {
-			const file = files[0];
-			const fileReader = new FileReader();
-			fileReader.readAsText(file, "UTF-8");
-			fileReader.onload = event => {
-				const newFO = JSON.parse(event?.target?.result as string) as AppArray.Model.Application;
-				let model = new SystemDiagramModel(newFO);
-				onModelChange(model)
-
-			};
-		}
-	};
-
-	return <>
-		<Input
-			accept=".json"
-			ref={inputFile}
-			onChange={handleFileUpload}
-			type="file"
-		/>
-		<DemoButton onClick={() => (inputFile?.current as unknown as any).click()}>Load ...</DemoButton>
-	</>
-}
-
-class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: SystemDiagramModel; }> {
+class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: DiagramModel }> {
 	engine: DagreEngine;
+	cacheInfo: AppArray.CacheInfo;
 
 	constructor(props: any) {
 		super(props);
-		console.info(JSON.stringify(Demo));
-		const model = new SystemDiagramModel(Demo);
+		const model = new DiagramModel();
 		props.engine.setModel(model);
 		this.engine = new DagreEngine({
 			graph: {
@@ -70,9 +34,25 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: S
 			includeLinks: false
 		});
 
+		const cacheInfoValue = localStorage.getItem(AppArray.LOCAL_STORAGE_NAME.CACHE);
+		this.cacheInfo = cacheInfoValue !== null ? new AppArray.CacheInfo(JSON.parse(cacheInfoValue)) : new AppArray.CacheInfo(null);
+
 		this.state = {
 			model
 		}
+	}
+
+	onModelChange = (model: DiagramModel) => {
+		this.props.engine.setModel(model);
+		this.setState({ model }, () => {
+			this.autoDistribute();
+		})
+	};
+
+	onCheckBoxChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
+		let checked = event.target.checked;
+		this.cacheInfo!.keepModel = checked;
+		this.cacheInfo!.save();
 	}
 
 	autoDistribute = () => {
@@ -99,13 +79,14 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: S
 			<DemoWorkspaceWidget buttons={
 				<>
 					<DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton>
-					<LoadButton onModelChange={(model) => {
-						this.props.engine.setModel(model);
-						this.setState({ model }, () => {
-							this.autoDistribute();
-						})
-					}}/>
-				</>}>
+					<LoadButton onModelChange={(model) => this.onModelChange(model)}/>
+					<ClearButton onModelChange={(model) => this.onModelChange(model)}/>
+				</>}
+				options={
+					<>
+					<KeepModelCheckbox checked={this.cacheInfo.keepModel} onChange={this.onCheckBoxChanged} />
+					</>
+				}>
 				<DemoCanvasWidget>
 					<CanvasWidget engine={this.props.engine} />
 				</DemoCanvasWidget>

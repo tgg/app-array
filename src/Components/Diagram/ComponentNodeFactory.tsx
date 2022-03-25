@@ -3,7 +3,6 @@ import { AbstractReactFactory } from '@projectstorm/react-canvas-core';
 import { DiagramEngine } from '@projectstorm/react-diagrams-core';
 import { ComponentNodeModel } from './ComponentNodeModel';
 import { ComponentNodeWidget } from './ComponentNodeWidget';
-import { AppArray } from './Model';
 
 export class ComponentNodeFactory extends AbstractReactFactory<ComponentNodeModel, DiagramEngine> {
     constructor() {
