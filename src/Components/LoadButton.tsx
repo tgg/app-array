@@ -25,7 +25,6 @@ export const LoadButton = ({ onModelChange }: LoadButtonProps) => {
 			fileReader.readAsText(file, "UTF-8");
 			fileReader.onload = event => {
 				const newFO = JSON.parse(event?.target?.result as string) as AppArray.Model.Application;
-				newFO.filename = file;
 				let model = new SystemDiagramModel(newFO);
 				onModelChange(model)
 			};

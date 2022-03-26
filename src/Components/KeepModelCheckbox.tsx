@@ -1,12 +1,25 @@
-import React from 'react'
+import styled from '@emotion/styled';
+import React from 'react';
+
+export interface CheckBoxLabelProps {
+	checked?: any;
+	onChange?: any;
+}
 
 const CheckBoxLabel = "Keep model";
 
-const KeepModelCheckbox = ( { ...props } ) => (    
-    <label>
-        <input type="checkbox" {...props} />
-        {CheckBoxLabel}
-    </label>
-)
+const StyledLabel = styled.label`
+    color: white;
+`;
 
-export default KeepModelCheckbox;
+
+export class KeepModelCheckbox extends React.Component<CheckBoxLabelProps> {
+    render() {
+        return(
+            <StyledLabel>
+                <input type="checkbox" checked={this.props.checked} onChange={this.props.onChange} />
+                {CheckBoxLabel}
+            </StyledLabel>
+        );
+    }
+}

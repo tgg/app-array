@@ -59,6 +59,5 @@ export namespace AppArray.Model {
         consumes?: PortId[];
         components: Component[];
         environments?: Environment[];
-        filename?: String;
     }
 }
