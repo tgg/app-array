@@ -3,6 +3,7 @@ import { DiagramEngine} from '@projectstorm/react-diagrams';
 import { ComponentNodeModel } from './ComponentNodeModel';
 import { map } from 'lodash';
 import { Executor, ShellExecutor } from '../../Service/Executor';
+import * as signalr from '@microsoft/signalr';
 
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
@@ -114,14 +115,24 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStart = this.props.node.hasCommand('start');
 		this.hasStop = this.props.node.hasCommand('stop');
 		//console.log(process.env.REACT_APP_BACKEND_HOST)
-		const socket = new WebSocket("ws://localhost:9090/shell");
-
-		socket.onopen = (e) => {
-			console.info('Status: Connected');
-		};
+		const socket = new signalr.HubConnectionBuilder()
+								.configureLogging(signalr.LogLevel.Debug)
+								.withUrl('http://localhost:9090/shell', signalr.HttpTransportType.WebSockets)
+								.build();
+								
+		socket.on('statusUpdated', this.onStatusUpdated);
+		socket.start().then(function () {
+			console.log('Connected!');
+		}).catch(function (err) {
+			return console.error(err.toString());
+		});
 
 		this.executor = new ShellExecutor(socket);
     }
+
+	onStatusUpdated = (payload: any) => {
+		console.log("updated : " + payload);
+	}
 	
 	start = () => {
 		let cmd = this.props.node.component.commands?.start!;
