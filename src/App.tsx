@@ -13,7 +13,7 @@ import { DemoCanvasWidget } from './Components/DemoCanvasWidget';
 import { ComponentNodeFactory } from './Components/Diagram/ComponentNodeFactory';
 import { LoadButton } from './Components/Toolbar/LoadButton';
 import { ClearButton } from './Components/Toolbar/ClearButton';
-import { KeepModelCheckbox } from './Components/Toolbar/KeepModelCheckbox';
+import { CustomCheckbox } from './Components/Toolbar/CustomCheckbox';
 import { CacheInfo, LOCAL_STORAGE_NAME } from './Model/CacheInfo';
 import { AppArray } from './Model/Model';
 import { SystemDiagramModel } from './Model/SystemDiagramModel';
@@ -22,7 +22,7 @@ import { ModelService } from './Service/ModelService';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: DiagramModel, checked: boolean, connected: boolean, connectionInfo: String }> {
+class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: DiagramModel, checked: boolean, disconnected: boolean, connected: boolean, connectionInfo: String }> {
 	engine: DagreEngine;
 	cacheInfo: CacheInfo;
 	modelService: ModelService;
@@ -32,7 +32,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 		const cacheInfoValue = localStorage.getItem(LOCAL_STORAGE_NAME.CACHE);
 		this.cacheInfo = cacheInfoValue !== null ? new CacheInfo(JSON.parse(cacheInfoValue)) : new CacheInfo(null);
 		this.cacheInfo.host = "http://localhost:9090";
-		this.modelService = new ModelService(this.cacheInfo.host);
+		this.modelService = new ModelService(this.cacheInfo, this.onConnected, this.onConnectionError, this.onModelSaved);
 		
 		let model = new DiagramModel();
 		
@@ -51,18 +51,24 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 			model,
 			checked: !this.cacheInfo.keepModel,
 			connected: false,
+			disconnected: !this.cacheInfo.disconnected,
 			connectionInfo: "",
 		};
 	}
 
-	onModelConnected = () => {
+	onConnected = () => {
 		toast.success("Connected")
 		this.setState({connected: true, connectionInfo: this.cacheInfo.host});
+		this.modelService.sendModel(this.state.model);
 	}
 
-	onModelConnectionError = (err: any) => {
+	onConnectionError = (err: any) => {
 		toast.error("Connection lost to " + this.cacheInfo.host)
 		this.setState({connected: false, connectionInfo: err});
+	}
+
+	onModelSaved = (valid: boolean, path: String) => {
+		this.setState({connectionInfo: path});
 	}
 
 	updateCacheModel = () => {
@@ -85,12 +91,30 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 		});
 	};
 
-	onCheckBoxChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
+	onKeepModelChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
 		this.setState(state => ({
 			checked: !event.target.checked
 		}));
 		this.cacheInfo.keepModel = this.state.checked;
 		this.updateCacheModel();
+	}
+
+	updateDisconnected = () => {
+		if (this.cacheInfo.disconnected) {
+			this.modelService.disconnect();
+		}
+		else {
+			this.modelService.connect();
+		}
+		this.cacheInfo.save();
+	};
+
+	onDisconnectedChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
+		this.setState(state => ({
+			disconnected: !event.target.checked
+		}));
+		this.cacheInfo.disconnected = this.state.disconnected;
+		this.updateDisconnected();
 	}
 
 	autoDistribute = () => {
@@ -100,7 +124,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 	};
 
 	componentDidMount(): void {
-		this.modelService.connect(this.onModelConnected, this.onModelConnectionError);
+		this.updateDisconnected();
 
 		if(this.cacheInfo.model !== "") {
 			const application = JSON.parse(this.cacheInfo.model as string) as AppArray.Model.Application;
@@ -108,9 +132,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 			this.props.engine.setModel(model);
 			this.setState({ model }, () => {
 				this.updateCacheModel();
-				this.modelService.sendModel(model);
 			});
-			
 		}
 
 		setTimeout(() => {
@@ -136,7 +158,8 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 				options={
 					<>
 					<ToastContainer />
-					<KeepModelCheckbox checked={!this.state.checked} onChange={this.onCheckBoxChanged} />
+					<CustomCheckbox checked={!this.state.checked} onChange={this.onKeepModelChanged} label="Keep model" />
+					<CustomCheckbox checked={!this.state.disconnected} onChange={this.onDisconnectedChanged} label="Disconnected" />
 					</>
 				}
 				statusItems={

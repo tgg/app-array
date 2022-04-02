@@ -1,65 +1,74 @@
 import * as signalr from '@microsoft/signalr';
 import { DiagramModel } from '@projectstorm/react-diagrams';
 import { toast } from 'react-toastify';
+import { CacheInfo } from '../Model/CacheInfo';
 import { JsonType, ResponseFactory } from '../Model/Responses/Response';
 import { SystemDiagramModel } from '../Model/SystemDiagramModel';
 
 export class ModelResponseHandler {
-    handleSendModelResponse(payload: any) {
+    handleSendModelResponse(payload: any, onModelSaved: (valid: boolean, path: String) => void) {
         const resp = new ResponseFactory().buildHubResponse(payload);
-        if(resp.type === JsonType.TypeError)
-        {
+        if(resp.type === JsonType.TypeError) {
             toast.error(`Error while sending model (${resp.statusCode}) : ${resp.msg}`)
+            onModelSaved(false, "");
         } 
-        else if(resp.type === JsonType.TypeNewModel)
-        {
-            this.handleNewModelReceived(payload);
+        else if(resp.type === JsonType.TypeNewModel) {
+            const newModelResp = new ResponseFactory().buildNewModelResponseDirectly(payload);
+            toast.info(`Model ${newModelResp.id} registered with path ${newModelResp.path}`)
+            onModelSaved(true, newModelResp.path);
         }
         else {
-            toast.info(resp);
+            console.log(`Incorrect message received handleSendModelResponse : ${resp}`)
+            onModelSaved(false, "");
         }
     }
 
     handleNewModelReceived(payload: any) {
         const newModelResp = new ResponseFactory().buildNewModelResponseDirectly(payload);
-        toast.info(`Model ${newModelResp.id} registered with path ${newModelResp.path}`)
+        toast.info(`New model have been registered with path ${newModelResp.path}`)
     }
 }
 
 export class ModelService {
-    host: String;
-    socket?: signalr.HubConnection;
+    private cacheInfo: CacheInfo;
+    private onConnected: () => void;
+    private onError: (err: any) => void;
+    private onModelSaved: (valid: boolean, path: String) => void;
+    private socket?: signalr.HubConnection;
 
-    constructor(host: String) {
-        this.host = host;
+    constructor(cacheInfo: CacheInfo, onConnected: () => void, onError: (err: any) => void, onModelSaved: (valid: boolean, path: String) => void) {
+        this.cacheInfo = cacheInfo;
+        this.onConnected = onConnected;
+        this.onError = onError;
+        this.onModelSaved = onModelSaved;
     }
 
-    connect(onConnected: () => void, onError: (err: any) => void): void{
-        let url = this.host + "/model";
+    connect(): void{
+        let url = this.cacheInfo.host + "/model";
 
 		this.socket = new signalr.HubConnectionBuilder()
 								.configureLogging(signalr.LogLevel.Debug)
 								.withUrl(url, signalr.HttpTransportType.WebSockets)
 								.build();
 								
-        this.socket.on('sendModelResponse', this.sendModelResponse);
-        this.socket.on('newModelReceived', this.newModelReceived);
-        this.socket.onclose(onError);
-		this.socket?.start().then(onConnected).catch(onError);
+        this.socket.on('sendModelResponse', data => {
+            new ModelResponseHandler().handleSendModelResponse(data, this.onModelSaved);
+        });
+        this.socket.on('newModelReceived', data => {
+            new ModelResponseHandler().handleNewModelReceived(data);
+        });
+        this.socket.onclose(this.onError);
+		this.socket?.start().then(this.onConnected).catch(this.onError);
+    }
+
+    disconnect() {
+        this.socket?.stop();
     }
 
     sendModel(model: DiagramModel): void {
-        if(model instanceof SystemDiagramModel) {
+        if(model instanceof SystemDiagramModel && !this.cacheInfo.disconnected) {
             const systemModel = model as SystemDiagramModel;
             this.socket?.send("sendModel", JSON.stringify(systemModel.getApplication()))
         }
-    }
-    
-    sendModelResponse(payload: any) {
-        new ModelResponseHandler().handleSendModelResponse(payload);
-    }
-
-    newModelReceived(payload: any) {
-        new ModelResponseHandler().handleNewModelReceived(payload);        
     }
 }

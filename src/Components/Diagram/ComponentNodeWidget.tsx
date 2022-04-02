@@ -105,6 +105,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStop:boolean;
 	private status: string = 'UNKNOWN';
 	private executor: Executor<Uint8Array,any>;
+	private socket: signalr.HubConnection;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
 	constructor(args: ComponentNodeWidgetProps | Readonly<ComponentNodeWidgetProps>) {
@@ -117,19 +118,19 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		//console.log(process.env.REACT_APP_BACKEND_HOST)
 		let url = "http://localhost:9090/shell";
 
-		const socket = new signalr.HubConnectionBuilder()
+		this.socket = new signalr.HubConnectionBuilder()
 								.configureLogging(signalr.LogLevel.Debug)
 								.withUrl(url, signalr.HttpTransportType.WebSockets)
 								.build();
 								
-		socket.on('statusUpdated', this.onStatusUpdated);
-		socket.start().then(function () {
+		this.socket.on('statusUpdated', this.onStatusUpdated);
+		this.socket.start().then(function () {
 			console.log('Connected!');
 		}).catch(function (err) {
 			return console.error(err.toString());
 		});
 
-		this.executor = new ShellExecutor(socket);
+		this.executor = new ShellExecutor(this.socket);
     }
 
 	onStatusUpdated = (payload: any) => {
@@ -168,6 +169,10 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		};
 		
 		instance.run([]);
+	}
+
+	componentWillUnmount() {
+		this.socket.stop()
 	}
 	
 	render() {
