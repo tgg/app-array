@@ -1,5 +1,6 @@
 import { Environment } from "../Model/Environment";
 import * as signalr from '@microsoft/signalr';
+import { ComponentService } from "./ComponentService";
 
 export enum Status {
     UNKNOWN,
@@ -67,10 +68,10 @@ export class JavaScriptExecutor implements Executor<Uint8Array,any>{
 
 export class ShellExecutor implements Executor<Uint8Array,any> {
         type = 'shell';
-        socket: signalr.HubConnection;
+        service: ComponentService;
         
-        constructor(socket: signalr.HubConnection) {
-            this.socket = socket;
+        constructor(service: ComponentService) {
+            this.service = service;
         }
         
         runner(steps: string[]): (context: Environment) => Cmd<Uint8Array, any> {
@@ -85,7 +86,7 @@ export class ShellExecutor implements Executor<Uint8Array,any> {
             };
             
             return (ctx: Environment) => {
-                let sock = this.socket;
+                let service = this.service;
                 
                 return {
                     launchTrail: startTrail,
@@ -96,7 +97,7 @@ export class ShellExecutor implements Executor<Uint8Array,any> {
                         return new Promise((resolve, reject) => {
                             // Loop with each command
                             steps.forEach(step => {
-                                sock.invoke('sendCommand', step);
+                                service.sendCommand(step);
                             });
                             
                             // TODO: Wait until nothing left to read

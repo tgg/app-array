@@ -21,6 +21,7 @@ import { ConnectedStatusText } from './Components/StatusBar/ConnectedStatusText'
 import { ModelService } from './Service/ModelService';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ComponentNodeModel } from './Components/Diagram/ComponentNodeModel';
 
 export interface SystemWidgetProps {
 	diagramEngine: DiagramEngine;
@@ -38,9 +39,11 @@ export interface SystemWidgetState {
 class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState> {
 	distributionEngine: DagreEngine;
 	modelService: ModelService;
+	init: boolean;
 
 	constructor(props: any) {
 		super(props);
+		this.init = true;
 		this.props.cacheInfo.host = "http://localhost:9090";
 		this.modelService = new ModelService(this.props.cacheInfo, this.onConnected, this.onConnectionError, this.onModelSaved);
 		
@@ -81,12 +84,16 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		if(valid) {
 			this.props.cacheInfo.path = path;
 		}
-		else if(this.state.model instanceof SystemDiagramModel) {
+		if(this.state.model instanceof SystemDiagramModel) {
 			const systemModel = this.state.model as SystemDiagramModel;
 			this.props.cacheInfo.path = `/${systemModel.getApplication().id}`;
 		}
-		this.props.diagramEngine.setModel(this.state.model);
-		this.updateCacheModel();
+		if(!this.init) {
+			this.props.diagramEngine.setModel(this.state.model);
+			this.updateCacheModel();
+		} else {
+			this.init = false;
+		}
 		setTimeout(() => {
 			this.autoDistribute();
 		}, 1000);
@@ -103,9 +110,10 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		this.props.cacheInfo.save();
 	};
 
-	onModelChange = async (model: DiagramModel) => {
-		this.setState({ model });
-		await this.modelService.sendModel(model);
+	onModelChange = (model: DiagramModel) => {
+		this.setState({ model }, async () => {
+			await this.modelService.sendModel(model);
+		});
 	};
 
 	onKeepModelChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,6 +140,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		}));
 		this.props.cacheInfo.disconnected = this.state.disconnected;
 		this.updateDisconnected();
+		this.updateNodes();
 	}
 
 	componentDidMount = async () => {
@@ -140,9 +149,24 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		if(this.props.cacheInfo.model !== "") {
 			const application = JSON.parse(this.props.cacheInfo.model as string) as AppArray.Model.Application;
 			const model = new SystemDiagramModel(application);
-			this.setState({ model })
-			this.modelService.sendModel(model);
+			this.setState({ model }, () => {
+				this.modelService.sendModel(model);
+			})
 		}
+	}
+
+	async componentWillUnmount() {
+		await this.modelService.disconnect();
+	}
+
+	updateNodes = () => {
+		const model = this.props.diagramEngine.getModel();
+		const nodes = model.getNodes();
+		nodes.forEach((val, i, arr) => {
+			const node = val as ComponentNodeModel;
+			if(node.widget)
+				node.widget.onDisconnected();
+		});
 	}
 
 	autoDistribute = () => {
@@ -190,7 +214,8 @@ function App() {
 	const cacheInfoValue = localStorage.getItem(LOCAL_STORAGE_NAME.CACHE);
 	const cacheInfo = cacheInfoValue !== null ? new CacheInfo(JSON.parse(cacheInfoValue)) : new CacheInfo(null);
 	let engine = createEngine();
-	engine.getNodeFactories().registerFactory(new ComponentNodeFactory(cacheInfo));
+	const factory = new ComponentNodeFactory(cacheInfo);
+	engine.getNodeFactories().registerFactory(factory);
 
 	return <SystemWidget diagramEngine={engine} cacheInfo={cacheInfo} />;
 }

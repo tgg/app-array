@@ -66,9 +66,11 @@ export class ModelService {
     }
 
     async sendModel(model: DiagramModel) {
-        if(model instanceof SystemDiagramModel && !this.cacheInfo.disconnected) {
+        if(model instanceof SystemDiagramModel && !this.cacheInfo.disconnected && this.socket?.connectionId) {
             const systemModel = model as SystemDiagramModel;
             await this.socket?.send("sendModel", JSON.stringify(systemModel.getApplication()))
+        } else {
+            this.onModelSaved(false, "");
         }
     }
 }

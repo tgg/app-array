@@ -8,6 +8,7 @@ import * as signalr from '@microsoft/signalr';
 import { CacheInfo } from '../../Model/CacheInfo';
 import { ConnectedStatusText } from '../StatusBar/ConnectedStatusText';
 import { toast } from 'react-toastify';
+import { ComponentService } from '../../Service/ComponentService';
 
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
@@ -113,27 +114,20 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStop:boolean;
 	private status: string = 'UNKNOWN';
 	private executor: Executor<Uint8Array,any>;
-	private socket: signalr.HubConnection;
+	private componentService: ComponentService;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
 	constructor(args: ComponentNodeWidgetProps | Readonly<ComponentNodeWidgetProps>) {
         super(args);
+		this.props.node.widget = this;
         this.generatePort = (port) => {
             return React.createElement(DefaultPortLabelWidget_1.DefaultPortLabel, { engine: this.props.engine, port: port, key: port.getID() });
         };
 		this.hasStart = this.props.node.hasCommand('start');
 		this.hasStop = this.props.node.hasCommand('stop');
-		let url = `${this.props.cache.host}${this.props.cache.path}`;
-		this.socket = new signalr.HubConnectionBuilder()
-								.configureLogging(signalr.LogLevel.Debug)
-								.withUrl(url, signalr.HttpTransportType.WebSockets)
-								.build();
-								
-		this.socket.on('statusUpdated', this.onStatusUpdated);
-		this.socket.start().then(this.onConnected).catch(this.onError);
-		this.socket.onclose(this.onError);
 
-		this.executor = new ShellExecutor(this.socket);
+		this.componentService = new ComponentService(this.props.cache, this.onConnected, this.onError, this.onStatusUpdated);
+		this.executor = new ShellExecutor(this.componentService);
 
 		this.state = {
 			connected: false
@@ -188,12 +182,23 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		instance.run([]);
 	}
 
-	componentWillUnmount() {
-		this.socket.stop()
+	async componentDidMount() {
+		await this.componentService.connect();
 	}
 
-	
-	
+	async componentWillUnmount() {
+		this.componentService.disconnect();
+	}
+
+	onDisconnected = () => {
+		if (this.props.cache.disconnected) {
+			this.componentService.disconnect();
+		}
+		else {
+			this.componentService.connect();
+		}
+	}
+
 	render() {
         return (
 				<this.Border className={this.status}>

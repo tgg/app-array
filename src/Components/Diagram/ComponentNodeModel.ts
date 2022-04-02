@@ -1,8 +1,10 @@
 import { DefaultNodeModel } from "@projectstorm/react-diagrams";
 import { AppArray } from "../../Model/Model";
+import { ComponentNodeWidget } from "./ComponentNodeWidget";
 
 export class ComponentNodeModel extends DefaultNodeModel {
     readonly component: AppArray.Model.Component;
+    widget?: ComponentNodeWidget;
 
     constructor(component: AppArray.Model.Component) {
         super({
