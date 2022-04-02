@@ -19,6 +19,8 @@ import { AppArray } from './Model/Model';
 import { SystemDiagramModel } from './Model/SystemDiagramModel';
 import { ConnectedStatusText } from './Components/StatusBar/ConnectedStatusText';
 import { ModelService } from './Service/ModelService';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: DiagramModel, checked: boolean, connected: boolean, connectionInfo: String }> {
 	engine: DagreEngine;
@@ -54,10 +56,12 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 	}
 
 	onModelConnected = () => {
+		toast.success("Connected")
 		this.setState({connected: true, connectionInfo: this.cacheInfo.host});
 	}
 
 	onModelConnectionError = (err: any) => {
+		toast.error("Connection lost to " + this.cacheInfo.host)
 		this.setState({connected: false, connectionInfo: err});
 	}
 
@@ -75,9 +79,10 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 	onModelChange = (model: DiagramModel) => {
 		this.props.engine.setModel(model);
 		this.setState({ model }, () => {
+			this.updateCacheModel();
 			this.autoDistribute();
+			this.modelService.sendModel(model);
 		});
-		this.updateCacheModel();
 	};
 
 	onCheckBoxChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,6 +108,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 			this.props.engine.setModel(model);
 			this.setState({ model }, () => {
 				this.updateCacheModel();
+				this.modelService.sendModel(model);
 			});
 			
 		}
@@ -129,6 +135,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 				</>}
 				options={
 					<>
+					<ToastContainer />
 					<KeepModelCheckbox checked={!this.state.checked} onChange={this.onCheckBoxChanged} />
 					</>
 				}
