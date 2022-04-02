@@ -5,7 +5,7 @@ import React from "react";
 export interface ConnectedStatusTextProps {
 	isConnected?: boolean;
 	onChange?: any;
-    path?: string;
+    path?: String;
 }
 
 const RedStatusDot = styled.span`
@@ -41,7 +41,7 @@ const StyledText = styled.p`
         transform:translateY(-50%);
         
         /* move to right */
-        left:-100%;
+        left:-10em;
         
         /* basic styles */
         width:200px;

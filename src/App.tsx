@@ -18,23 +18,21 @@ import { CacheInfo, LOCAL_STORAGE_NAME } from './Model/CacheInfo';
 import { AppArray } from './Model/Model';
 import { SystemDiagramModel } from './Model/SystemDiagramModel';
 import { ConnectedStatusText } from './Components/StatusBar/ConnectedStatusText';
+import { ModelService } from './Service/ModelService';
 
-class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: DiagramModel, checked: boolean }> {
+class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: DiagramModel, checked: boolean, connected: boolean, connectionInfo: String }> {
 	engine: DagreEngine;
 	cacheInfo: CacheInfo;
+	modelService: ModelService;
 
 	constructor(props: any) {
 		super(props);
 		const cacheInfoValue = localStorage.getItem(LOCAL_STORAGE_NAME.CACHE);
 		this.cacheInfo = cacheInfoValue !== null ? new CacheInfo(JSON.parse(cacheInfoValue)) : new CacheInfo(null);
+		this.cacheInfo.host = "http://localhost:9090";
+		this.modelService = new ModelService(this.cacheInfo.host);
 		
 		let model = new DiagramModel();
-
-		if(this.cacheInfo.model !== "") {
-			const application = JSON.parse(this.cacheInfo.model as string) as AppArray.Model.Application;
-			model = new SystemDiagramModel(application);
-		}
-		props.engine.setModel(model);
 		
 		this.engine = new DagreEngine({
 			graph: {
@@ -45,11 +43,22 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 			},
 			includeLinks: false
 		});
+		this.props.engine.setModel(model)
 
 		this.state = {
 			model,
-			checked: !this.cacheInfo.keepModel
+			checked: !this.cacheInfo.keepModel,
+			connected: false,
+			connectionInfo: "",
 		};
+	}
+
+	onModelConnected = () => {
+		this.setState({connected: true, connectionInfo: this.cacheInfo.host});
+	}
+
+	onModelConnectionError = (err: any) => {
+		this.setState({connected: false, connectionInfo: err});
 	}
 
 	updateCacheModel = () => {
@@ -86,9 +95,21 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 	};
 
 	componentDidMount(): void {
+		this.modelService.connect(this.onModelConnected, this.onModelConnectionError);
+
+		if(this.cacheInfo.model !== "") {
+			const application = JSON.parse(this.cacheInfo.model as string) as AppArray.Model.Application;
+			const model = new SystemDiagramModel(application);
+			this.props.engine.setModel(model);
+			this.setState({ model }, () => {
+				this.updateCacheModel();
+			});
+			
+		}
+
 		setTimeout(() => {
 			this.autoDistribute();
-		}, 500);
+		}, 1000);
 	}
 
 	reroute() {
@@ -113,7 +134,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 				}
 				statusItems={
 					<>
-					<ConnectedStatusText></ConnectedStatusText>
+					<ConnectedStatusText isConnected={this.state.connected} path={this.state.connectionInfo}></ConnectedStatusText>
 					</>
 				}>
 				<DemoCanvasWidget>
