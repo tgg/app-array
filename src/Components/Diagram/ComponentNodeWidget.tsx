@@ -21,6 +21,7 @@ export interface ComponentNodeWidgetProps {
 
 export interface ComponentNodeWidgetState {
 	connected: boolean;
+	status: String;
 }
 
 export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProps, ComponentNodeWidgetState>  {
@@ -112,7 +113,6 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	
 	private hasStart:boolean;
 	private hasStop:boolean;
-	private status: string = 'UNKNOWN';
 	private executor: Executor<Uint8Array,any>;
 	private componentService: ComponentService;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
@@ -130,6 +130,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.executor = new ShellExecutor(this.componentService);
 
 		this.state = {
+			status: 'UNKNOWN',
 			connected: false
 		}
     }
@@ -150,7 +151,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	
 	start = () => {
 		let cmd = this.props.node.component.commands?.start!;
-		this.status = 'STARTING';
+		this.setState({status: 'STARTING'});
 		let runner = this.executor.runner(cmd.steps);
 		let d = new TextDecoder();
 		let context = { test: new Map<string, string>() }
@@ -167,7 +168,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 	stop = () => {
 		let cmd = this.props.node.component.commands?.stop!;
-		this.status = 'STOPPING';
+		this.setState({status: 'STOPPING'});
 		let runner = this.executor.runner(cmd.steps);
 		let d = new TextDecoder();
 		let context = { test: new Map<string, string>() }
@@ -201,7 +202,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 	render() {
         return (
-				<this.Border className={this.status}>
+				<this.Border className={this.state.status}>
 					<this.Node
 						background={this.props.node.getOptions().color}
 						selected={this.props.node.isSelected()}
