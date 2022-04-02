@@ -22,17 +22,14 @@ import { ModelService } from './Service/ModelService';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: DiagramModel, checked: boolean, disconnected: boolean, connected: boolean, connectionInfo: String }> {
+class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: CacheInfo }, { model: DiagramModel, checked: boolean, disconnected: boolean, connected: boolean, connectionInfo: String }> {
 	engine: DagreEngine;
-	cacheInfo: CacheInfo;
 	modelService: ModelService;
 
 	constructor(props: any) {
 		super(props);
-		const cacheInfoValue = localStorage.getItem(LOCAL_STORAGE_NAME.CACHE);
-		this.cacheInfo = cacheInfoValue !== null ? new CacheInfo(JSON.parse(cacheInfoValue)) : new CacheInfo(null);
-		this.cacheInfo.host = "http://localhost:9090";
-		this.modelService = new ModelService(this.cacheInfo, this.onConnected, this.onConnectionError, this.onModelSaved);
+		this.props.cacheInfo.host = "http://localhost:9090";
+		this.modelService = new ModelService(this.props.cacheInfo, this.onConnected, this.onConnectionError, this.onModelSaved);
 		
 		let model = new DiagramModel();
 		
@@ -49,37 +46,43 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 
 		this.state = {
 			model,
-			checked: !this.cacheInfo.keepModel,
+			checked: !this.props.cacheInfo.keepModel,
 			connected: false,
-			disconnected: !this.cacheInfo.disconnected,
+			disconnected: !this.props.cacheInfo.disconnected,
 			connectionInfo: "",
 		};
 	}
 
 	onConnected = () => {
 		toast.success("Connected")
-		this.setState({connected: true, connectionInfo: this.cacheInfo.host});
+		this.setState({connected: true, connectionInfo: this.props.cacheInfo.host});
 		this.modelService.sendModel(this.state.model);
 	}
 
 	onConnectionError = (err: any) => {
-		toast.error("Connection lost to " + this.cacheInfo.host)
+		toast.error("Connection lost to " + this.props.cacheInfo.host)
 		this.setState({connected: false, connectionInfo: err});
 	}
 
 	onModelSaved = (valid: boolean, path: String) => {
-		this.setState({connectionInfo: path});
+		if(valid) {
+			this.props.cacheInfo.path = path;
+		}
+		else if(this.state.model instanceof SystemDiagramModel) {
+			const systemModel = this.state.model as SystemDiagramModel;
+			this.props.cacheInfo.path = `/${systemModel.getApplication().id}`;
+		}
 	}
 
 	updateCacheModel = () => {
-		if (this.cacheInfo.keepModel && this.state.model instanceof SystemDiagramModel) {
+		if (this.props.cacheInfo.keepModel && this.state.model instanceof SystemDiagramModel) {
 			const systemModel = this.state.model as SystemDiagramModel;
-			this.cacheInfo.model = JSON.stringify(systemModel.getApplication());
+			this.props.cacheInfo.model = JSON.stringify(systemModel.getApplication());
 		}
 		else {
-			this.cacheInfo.model = "";
+			this.props.cacheInfo.model = "";
 		}
-		this.cacheInfo.save();
+		this.props.cacheInfo.save();
 	};
 
 	onModelChange = (model: DiagramModel) => {
@@ -95,25 +98,25 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 		this.setState(state => ({
 			checked: !event.target.checked
 		}));
-		this.cacheInfo.keepModel = this.state.checked;
+		this.props.cacheInfo.keepModel = this.state.checked;
 		this.updateCacheModel();
 	}
 
 	updateDisconnected = () => {
-		if (this.cacheInfo.disconnected) {
+		if (this.props.cacheInfo.disconnected) {
 			this.modelService.disconnect();
 		}
 		else {
 			this.modelService.connect();
 		}
-		this.cacheInfo.save();
+		this.props.cacheInfo.save();
 	};
 
 	onDisconnectedChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
 		this.setState(state => ({
 			disconnected: !event.target.checked
 		}));
-		this.cacheInfo.disconnected = this.state.disconnected;
+		this.props.cacheInfo.disconnected = this.state.disconnected;
 		this.updateDisconnected();
 	}
 
@@ -126,8 +129,8 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 	componentDidMount(): void {
 		this.updateDisconnected();
 
-		if(this.cacheInfo.model !== "") {
-			const application = JSON.parse(this.cacheInfo.model as string) as AppArray.Model.Application;
+		if(this.props.cacheInfo.model !== "") {
+			const application = JSON.parse(this.props.cacheInfo.model as string) as AppArray.Model.Application;
 			const model = new SystemDiagramModel(application);
 			this.props.engine.setModel(model);
 			this.setState({ model }, () => {
@@ -176,10 +179,12 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 }
 
 function App() {
+	const cacheInfoValue = localStorage.getItem(LOCAL_STORAGE_NAME.CACHE);
+	const cacheInfo = cacheInfoValue !== null ? new CacheInfo(JSON.parse(cacheInfoValue)) : new CacheInfo(null);
 	let engine = createEngine();
-	engine.getNodeFactories().registerFactory(new ComponentNodeFactory());
+	engine.getNodeFactories().registerFactory(new ComponentNodeFactory(cacheInfo));
 
-	return <SystemWidget engine={engine} />;
+	return <SystemWidget engine={engine} cacheInfo={cacheInfo} />;
 }
 
 export default App;

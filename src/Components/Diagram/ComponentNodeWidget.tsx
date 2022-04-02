@@ -5,6 +5,7 @@ import { Context, Environment } from '../../Model/Environment';
 import { map } from 'lodash';
 import { Executor, ShellExecutor } from '../../Service/Executor';
 import * as signalr from '@microsoft/signalr';
+import { CacheInfo } from '../../Model/CacheInfo';
 
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
@@ -12,6 +13,7 @@ const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
 export interface ComponentNodeWidgetProps {
 	node: ComponentNodeModel;
 	engine: DiagramEngine;
+	cache: CacheInfo;
 }
 
 export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProps>  {
@@ -115,9 +117,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
         };
 		this.hasStart = this.props.node.hasCommand('start');
 		this.hasStop = this.props.node.hasCommand('stop');
-		//console.log(process.env.REACT_APP_BACKEND_HOST)
-		let url = "http://localhost:9090/shell";
-
+		let url = `${this.props.cache.host}${this.props.cache.path}`;
 		this.socket = new signalr.HubConnectionBuilder()
 								.configureLogging(signalr.LogLevel.Debug)
 								.withUrl(url, signalr.HttpTransportType.WebSockets)
