@@ -6,6 +6,7 @@ import styled from '@emotion/styled';
 export interface DemoWorkspaceWidgetProps {
 	buttons?: any;
 	options?: any;
+	statusItems?: any;
 }
 
 namespace S {
@@ -28,6 +29,12 @@ namespace S {
 		border-radius: 5px;
 		overflow: hidden;
 	`;
+
+	export const StatusBar = styled.div`
+		padding: 5px;
+		display: flex;
+		flex-shrink: 0;
+	`
 }
 
 export const DemoButton = styled.button`
@@ -52,6 +59,7 @@ export class DemoWorkspaceWidget extends React.Component<DemoWorkspaceWidgetProp
 			<S.Container>
 				<S.Toolbar>{this.props.buttons}{this.props.options}</S.Toolbar>
 				<S.Content>{this.props.children}</S.Content>
+				<S.StatusBar>{this.props.statusItems}</S.StatusBar>
 			</S.Container>
 		);
 	}

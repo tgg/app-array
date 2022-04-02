@@ -11,12 +11,13 @@ import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { DemoButton, DemoWorkspaceWidget } from './Components/DemoWorkspaceWidget';
 import { DemoCanvasWidget } from './Components/DemoCanvasWidget';
 import { ComponentNodeFactory } from './Components/Diagram/ComponentNodeFactory';
-import { LoadButton } from './Components/LoadButton';
-import { ClearButton } from './Components/ClearButton';
-import { KeepModelCheckbox } from './Components/KeepModelCheckbox';
+import { LoadButton } from './Components/Toolbar/LoadButton';
+import { ClearButton } from './Components/Toolbar/ClearButton';
+import { KeepModelCheckbox } from './Components/Toolbar/KeepModelCheckbox';
 import { CacheInfo, LOCAL_STORAGE_NAME } from './Model/CacheInfo';
 import { AppArray } from './Model/Model';
 import { SystemDiagramModel } from './Model/SystemDiagramModel';
+import { ConnectedStatusText } from './Components/StatusBar/ConnectedStatusText';
 
 class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: DiagramModel, checked: boolean }> {
 	engine: DagreEngine;
@@ -108,6 +109,11 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine }, { model: D
 				options={
 					<>
 					<KeepModelCheckbox checked={!this.state.checked} onChange={this.onCheckBoxChanged} />
+					</>
+				}
+				statusItems={
+					<>
+					<ConnectedStatusText></ConnectedStatusText>
 					</>
 				}>
 				<DemoCanvasWidget>

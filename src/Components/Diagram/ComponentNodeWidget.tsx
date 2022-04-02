@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { DiagramEngine} from '@projectstorm/react-diagrams';
 import { ComponentNodeModel } from './ComponentNodeModel';
+import { Context, Environment } from '../../Model/Environment';
 import { map } from 'lodash';
 import { Executor, ShellExecutor } from '../../Service/Executor';
 import * as signalr from '@microsoft/signalr';
@@ -104,7 +105,6 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStop:boolean;
 	private status: string = 'UNKNOWN';
 	private executor: Executor<Uint8Array,any>;
-
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
 	constructor(args: ComponentNodeWidgetProps | Readonly<ComponentNodeWidgetProps>) {
@@ -115,9 +115,11 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStart = this.props.node.hasCommand('start');
 		this.hasStop = this.props.node.hasCommand('stop');
 		//console.log(process.env.REACT_APP_BACKEND_HOST)
+		let url = "http://localhost:9090/shell";
+
 		const socket = new signalr.HubConnectionBuilder()
 								.configureLogging(signalr.LogLevel.Debug)
-								.withUrl('http://localhost:9090/shell', signalr.HttpTransportType.WebSockets)
+								.withUrl(url, signalr.HttpTransportType.WebSockets)
 								.build();
 								
 		socket.on('statusUpdated', this.onStatusUpdated);
@@ -139,7 +141,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.status = 'STARTING';
 		let runner = this.executor.runner(cmd.steps);
 		let d = new TextDecoder();
-		let instance = runner({ id: 'thisEnvironment' });
+		let context = { test: new Map<string, string>() }
+		let instance = runner({ id: 'thisEnvironment', context });
 		instance.channels.out.onReceive = (data: Uint8Array | null) => {
 			if (data) {
 				console.info(d.decode(data));
@@ -155,7 +158,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.status = 'STOPPING';
 		let runner = this.executor.runner(cmd.steps);
 		let d = new TextDecoder();
-		let instance = runner({ id: 'thisEnvironment' });
+		let context = { test: new Map<string, string>() }
+		let instance = runner({ id: 'thisEnvironment', context });
 		instance.channels.out.onReceive = (data: Uint8Array | null) => {
 			if (data) {
 				console.info(d.decode(data));

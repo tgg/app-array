@@ -1,4 +1,4 @@
-import { Environment } from "../Environment";
+import { Environment } from "../Model/Environment";
 import * as signalr from '@microsoft/signalr';
 
 export enum Status {
