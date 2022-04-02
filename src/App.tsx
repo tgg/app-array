@@ -22,8 +22,21 @@ import { ModelService } from './Service/ModelService';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: CacheInfo }, { model: DiagramModel, checked: boolean, disconnected: boolean, connected: boolean, connectionInfo: String }> {
-	engine: DagreEngine;
+export interface SystemWidgetProps {
+	diagramEngine: DiagramEngine;
+	cacheInfo: CacheInfo;
+}
+
+export interface SystemWidgetState {
+	model: DiagramModel;
+	checked: boolean;
+	disconnected: boolean;
+	connected: boolean;
+	connectionInfo: String;
+}
+
+class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState> {
+	distributionEngine: DagreEngine;
 	modelService: ModelService;
 
 	constructor(props: any) {
@@ -33,7 +46,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: C
 		
 		let model = new DiagramModel();
 		
-		this.engine = new DagreEngine({
+		this.distributionEngine = new DagreEngine({
 			graph: {
 				rankdir: 'LR',
 				ranker: 'longest-path',
@@ -42,14 +55,14 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: C
 			},
 			includeLinks: false
 		});
-		this.props.engine.setModel(model)
+		this.props.diagramEngine.setModel(model)
 
 		this.state = {
 			model,
 			checked: !this.props.cacheInfo.keepModel,
 			connected: false,
 			disconnected: !this.props.cacheInfo.disconnected,
-			connectionInfo: "",
+			connectionInfo: this.props.cacheInfo.host,
 		};
 	}
 
@@ -61,7 +74,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: C
 
 	onConnectionError = (err: any) => {
 		toast.error("Connection lost to " + this.props.cacheInfo.host)
-		this.setState({connected: false, connectionInfo: err});
+		this.setState({connected: false, connectionInfo: `${err} on ${this.props.cacheInfo.host}`});
 	}
 
 	onModelSaved = (valid: boolean, path: String) => {
@@ -72,6 +85,11 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: C
 			const systemModel = this.state.model as SystemDiagramModel;
 			this.props.cacheInfo.path = `/${systemModel.getApplication().id}`;
 		}
+		this.props.diagramEngine.setModel(this.state.model);
+		this.updateCacheModel();
+		setTimeout(() => {
+			this.autoDistribute();
+		}, 1000);
 	}
 
 	updateCacheModel = () => {
@@ -85,13 +103,9 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: C
 		this.props.cacheInfo.save();
 	};
 
-	onModelChange = (model: DiagramModel) => {
-		this.props.engine.setModel(model);
-		this.setState({ model }, () => {
-			this.updateCacheModel();
-			this.autoDistribute();
-			this.modelService.sendModel(model);
-		});
+	onModelChange = async (model: DiagramModel) => {
+		this.setState({ model });
+		await this.modelService.sendModel(model);
 	};
 
 	onKeepModelChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,12 +116,12 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: C
 		this.updateCacheModel();
 	}
 
-	updateDisconnected = () => {
+	updateDisconnected = async () => {
 		if (this.props.cacheInfo.disconnected) {
-			this.modelService.disconnect();
+			await this.modelService.disconnect();
 		}
 		else {
-			this.modelService.connect();
+			await this.modelService.connect();
 		}
 		this.props.cacheInfo.save();
 	};
@@ -120,31 +134,25 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: C
 		this.updateDisconnected();
 	}
 
-	autoDistribute = () => {
-		this.engine.redistribute(this.state.model);
-		this.reroute();
-		this.props.engine.repaintCanvas();
-	};
-
-	componentDidMount(): void {
-		this.updateDisconnected();
+	componentDidMount = async () => {
+		await this.updateDisconnected();
 
 		if(this.props.cacheInfo.model !== "") {
 			const application = JSON.parse(this.props.cacheInfo.model as string) as AppArray.Model.Application;
 			const model = new SystemDiagramModel(application);
-			this.props.engine.setModel(model);
-			this.setState({ model }, () => {
-				this.updateCacheModel();
-			});
+			this.setState({ model })
+			this.modelService.sendModel(model);
 		}
-
-		setTimeout(() => {
-			this.autoDistribute();
-		}, 1000);
 	}
 
+	autoDistribute = () => {
+		this.distributionEngine.redistribute(this.state.model);
+		this.reroute();
+		this.props.diagramEngine.repaintCanvas();
+	};
+
 	reroute() {
-		this.props.engine
+		this.props.diagramEngine
 			.getLinkFactories()
 			.getFactory<PathFindingLinkFactory>(PathFindingLinkFactory.NAME)
 			.calculateRoutingMatrix();
@@ -171,7 +179,7 @@ class SystemWidget extends React.Component<{ engine: DiagramEngine, cacheInfo: C
 					</>
 				}>
 				<DemoCanvasWidget>
-					<CanvasWidget engine={this.props.engine} />
+					<CanvasWidget engine={this.props.diagramEngine} />
 				</DemoCanvasWidget>
 			</DemoWorkspaceWidget>
 		);
@@ -184,7 +192,7 @@ function App() {
 	let engine = createEngine();
 	engine.getNodeFactories().registerFactory(new ComponentNodeFactory(cacheInfo));
 
-	return <SystemWidget engine={engine} cacheInfo={cacheInfo} />;
+	return <SystemWidget diagramEngine={engine} cacheInfo={cacheInfo} />;
 }
 
 export default App;

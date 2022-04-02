@@ -6,6 +6,8 @@ import { map } from 'lodash';
 import { Executor, ShellExecutor } from '../../Service/Executor';
 import * as signalr from '@microsoft/signalr';
 import { CacheInfo } from '../../Model/CacheInfo';
+import { ConnectedStatusText } from '../StatusBar/ConnectedStatusText';
+import { toast } from 'react-toastify';
 
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
@@ -16,7 +18,11 @@ export interface ComponentNodeWidgetProps {
 	cache: CacheInfo;
 }
 
-export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProps>  {
+export interface ComponentNodeWidgetState {
+	connected: boolean;
+}
+
+export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProps, ComponentNodeWidgetState>  {
 	Border = styled_1.default.div `
 	
 	`;
@@ -124,17 +130,28 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 								.build();
 								
 		this.socket.on('statusUpdated', this.onStatusUpdated);
-		this.socket.start().then(function () {
-			console.log('Connected!');
-		}).catch(function (err) {
-			return console.error(err.toString());
-		});
+		this.socket.start().then(this.onConnected).catch(this.onError);
+		this.socket.onclose(this.onError);
 
 		this.executor = new ShellExecutor(this.socket);
+
+		this.state = {
+			connected: false
+		}
     }
 
 	onStatusUpdated = (payload: any) => {
 		console.log("updated : " + payload);
+	}
+
+	onConnected = () => {
+		toast.success(`Component connected ${this.props.node.component.id} to ${this.props.cache.path}`);
+		this.setState({connected: true});
+	}
+	
+	onError = (err: any) => {
+		toast.error(`Component ${this.props.node.component.id} failed to connect to ${this.props.cache.path} : ${err}`);
+		this.setState({connected: false});
 	}
 	
 	start = () => {
@@ -174,6 +191,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	componentWillUnmount() {
 		this.socket.stop()
 	}
+
+	
 	
 	render() {
         return (
@@ -185,6 +204,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 						<this.Title>
 							<this.TitleName>{this.props.node.getOptions().name}</this.TitleName>
+							<ConnectedStatusText justDot={true} isConnected={this.state.connected} path={this.props.cache.path}></ConnectedStatusText>
 						</this.Title>
 
 						<this.Ports>

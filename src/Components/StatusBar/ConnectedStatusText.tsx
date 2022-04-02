@@ -4,23 +4,14 @@ import React from "react";
 
 export interface ConnectedStatusTextProps {
 	isConnected?: boolean;
-	onChange?: any;
     path?: String;
+    justDot?: boolean;
 }
 
-const RedStatusDot = styled.span`
+const StatusDot = styled.span`
     height: 1em;
     width: 1em;
-    background-color: red;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 0.5em;
-`;
-
-const GreenStatusDot = styled.span`
-    height: 1em;
-    width: 1em;
-    background-color: green;
+    background-color: ${(p: { background: any; }) => p.background};
     border-radius: 50%;
     display: inline-block;
     margin-right: 0.5em;
@@ -41,10 +32,10 @@ const StyledText = styled.p`
         transform:translateY(-50%);
         
         /* move to right */
-        left:-10em;
+        left:${(p: { leftvalue: any; widthvalue: any; }) => p.leftvalue};
         
         /* basic styles */
-        width:200px;
+        width:${(p: { leftvalue: any; widthvalue: any; }) => p.widthvalue};
         padding:0.5em;
         border-radius:10px;
         background:#fff;
@@ -60,14 +51,13 @@ const StyledText = styled.p`
 
 export class ConnectedStatusText extends React.Component<ConnectedStatusTextProps> {
     render() {
-        if(this.props.isConnected) {
-            return(
-                <StyledText data-text={this.props.path}><GreenStatusDot></GreenStatusDot>Connected</StyledText>
-            );
-        } else {  
-            return(
-                <StyledText data-text={this.props.path}><RedStatusDot></RedStatusDot>Not connected</StyledText>
-            );
-        }
+        let leftValue, widthValue, color, label;
+        leftValue = this.props.justDot ? "-5em" : "-10em";
+        widthValue = this.props.justDot ? "100px" : "200px";
+        color = this.props.isConnected ? "green" : "red";
+        label = this.props.justDot ? "" : this.props.isConnected ? "Connected" : "Not connected";
+        return(
+            <StyledText data-text={this.props.path} leftvalue={leftValue} widthvalue={widthValue}><StatusDot background={color}></StatusDot>{label}</StyledText>
+        );
     }
 }

@@ -43,7 +43,7 @@ export class ModelService {
         this.onModelSaved = onModelSaved;
     }
 
-    connect(): void{
+    async connect() {
         let url = this.cacheInfo.host + "/model";
 
 		this.socket = new signalr.HubConnectionBuilder()
@@ -58,17 +58,17 @@ export class ModelService {
             new ModelResponseHandler().handleNewModelReceived(data);
         });
         this.socket.onclose(this.onError);
-		this.socket?.start().then(this.onConnected).catch(this.onError);
+		await this.socket?.start().then(this.onConnected).catch(this.onError);
     }
 
-    disconnect() {
-        this.socket?.stop();
+    async disconnect() {
+        await this.socket?.stop();
     }
 
-    sendModel(model: DiagramModel): void {
+    async sendModel(model: DiagramModel) {
         if(model instanceof SystemDiagramModel && !this.cacheInfo.disconnected) {
             const systemModel = model as SystemDiagramModel;
-            this.socket?.send("sendModel", JSON.stringify(systemModel.getApplication()))
+            await this.socket?.send("sendModel", JSON.stringify(systemModel.getApplication()))
         }
     }
 }
