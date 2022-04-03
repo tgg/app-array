@@ -143,15 +143,30 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		this.updateNodes();
 	}
 
-	componentDidMount = async () => {
-		await this.updateDisconnected();
-
+	setCacheModel = () => {
 		if(this.props.cacheInfo.model !== "") {
 			const application = JSON.parse(this.props.cacheInfo.model as string) as AppArray.Model.Application;
 			const model = new SystemDiagramModel(application);
 			this.setState({ model }, () => {
 				this.modelService.sendModel(model);
 			})
+		}
+	}
+
+	componentDidMount = async () => {
+		if(!this.props.cacheInfo.disconnected)
+		{
+			await this.updateDisconnected();
+			if(!this.state.connected)
+			{
+				this.onModelSaved(false, "");
+			}
+			this.setCacheModel();
+		}
+		else 
+		{
+			this.onModelSaved(false, "");
+			this.setCacheModel();
 		}
 	}
 
