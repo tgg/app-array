@@ -168,7 +168,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 				this.setState({ status: resp.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STARTED : ComponentStyleStatus.STOPPED });
 				break;
 			case KeyCommand.STOP:
-				this.setState({ status: resp.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STOPPED : ComponentStyleStatus.STARTED });
+				this.setState({ status: resp.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STOPPED : ComponentStyleStatus.UNKNOWN });
 				break;
 		}
 		console.log(`Received result ${resp.result} for command ${resp.command} for component ${resp.componentId}`);
@@ -231,7 +231,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	}
 
 	status = () => {
-		let cmd = this.props.node.component.commands?.stop!;
+		let cmd = this.props.node.component.commands?.status!;
 		this.setState({status: ComponentStyleStatus.CHECKING});
 		let runner = this.executor.runner(KeyCommand.STATUS, cmd.steps);
 		let d = new TextDecoder();
