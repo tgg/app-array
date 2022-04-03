@@ -1,17 +1,29 @@
 import * as React from 'react';
+import * as signalr from '@microsoft/signalr';
 import { DiagramEngine} from '@projectstorm/react-diagrams';
+import { map } from 'lodash';
+import { toast } from 'react-toastify';
 import { ComponentNodeModel } from './ComponentNodeModel';
 import { Context, Environment } from '../../Model/Environment';
-import { map } from 'lodash';
 import { Executor, ShellExecutor } from '../../Service/Executor';
-import * as signalr from '@microsoft/signalr';
 import { CacheInfo } from '../../Model/CacheInfo';
+import { KeyCommand } from '../../Model/Model';
 import { ConnectedStatusText } from '../StatusBar/ConnectedStatusText';
-import { toast } from 'react-toastify';
 import { ComponentService } from '../../Service/ComponentService';
+import { CommandResponse, JsonType, ResponseFactory, UpdateResponse, UpdateStatus } from '../../Model/Communication/Response';
+import { isThisTypeNode } from 'typescript';
 
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
+
+enum ComponentStyleStatus {
+	UNKNOWN = "UNKNOWN",
+	STOPPING = "STOPPING",
+	STARTING = "STARTING",
+	STARTED = "STARTED",
+	STOPPED = "STOPPED",
+	CHECKING = "CHECKING",
+}
 
 export interface ComponentNodeWidgetProps {
 	node: ComponentNodeModel;
@@ -21,7 +33,7 @@ export interface ComponentNodeWidgetProps {
 
 export interface ComponentNodeWidgetState {
 	connected: boolean;
-	status: String;
+	status: ComponentStyleStatus;
 }
 
 export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProps, ComponentNodeWidgetState>  {
@@ -107,12 +119,24 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 			color: #cf142b;
 		}
 	`;
+	Button_status = styled_1.default.button `
+		background-color: rgba(255, 100, 100, 0);;
+		border: none;
+		color: white;
+		cursor: pointer;
+		font-size:22px;
+		&:hover {
+			color: blue;
+		}
+	`;
 	Icon = styled_1.default('i')`
 	`;
 
 	
 	private hasStart:boolean;
 	private hasStop:boolean;
+	private hasStatus:boolean;
+
 	private executor: Executor<Uint8Array,any>;
 	private componentService: ComponentService;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
@@ -123,20 +147,43 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
         this.generatePort = (port) => {
             return React.createElement(DefaultPortLabelWidget_1.DefaultPortLabel, { engine: this.props.engine, port: port, key: port.getID() });
         };
-		this.hasStart = this.props.node.hasCommand('start');
-		this.hasStop = this.props.node.hasCommand('stop');
+		this.hasStart = this.props.node.hasCommand(KeyCommand.START);
+		this.hasStop = this.props.node.hasCommand(KeyCommand.STOP);
+		this.hasStatus = this.props.node.hasCommand(KeyCommand.STATUS);
 
-		this.componentService = new ComponentService(this.props.cache, this.onConnected, this.onError, this.onStatusUpdated);
+		this.componentService = new ComponentService(this.props.cache, this.props.node.component, this.onConnected, this.onError, this.getCommandResult, this.onStatusUpdated);
 		this.executor = new ShellExecutor(this.componentService);
 
 		this.state = {
-			status: 'UNKNOWN',
+			status: ComponentStyleStatus.UNKNOWN,
 			connected: false
 		}
     }
 
+	getCommandResult = (payload: any) => {
+		const resp = new ResponseFactory().buildInnerResponse<CommandResponse>(payload);
+		switch(resp.commandId) {
+			case KeyCommand.START:
+			case KeyCommand.STATUS:
+				this.setState({ status: resp.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STARTED : ComponentStyleStatus.STOPPED });
+				break;
+			case KeyCommand.STOP:
+				this.setState({ status: resp.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STOPPED : ComponentStyleStatus.STARTED });
+				break;
+		}
+		console.log(`Received result ${resp.result} for command ${resp.command} for component ${resp.componentId}`);
+	}
+
 	onStatusUpdated = (payload: any) => {
-		console.log("updated : " + payload);
+		const resp = new ResponseFactory().buildHubResponse(payload);
+		if(resp.type === JsonType.TypeUpdate) {
+			const updateResponse = new ResponseFactory().buildInnerResponse<UpdateResponse>(payload);
+			if(updateResponse.componentId === this.props.node.component.id) {
+				this.setState({ status: updateResponse.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STARTED : ComponentStyleStatus.STOPPED });
+			}
+		} else {
+			console.log(resp.msg);
+		}
 	}
 
 	onConnected = () => {
@@ -151,8 +198,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	
 	start = () => {
 		let cmd = this.props.node.component.commands?.start!;
-		this.setState({status: 'STARTING'});
-		let runner = this.executor.runner(cmd.steps);
+		this.setState({status: ComponentStyleStatus.STARTING});
+		let runner = this.executor.runner(KeyCommand.START, cmd.steps);
 		let d = new TextDecoder();
 		let context = { test: new Map<string, string>() }
 		let instance = runner({ id: 'thisEnvironment', context });
@@ -168,8 +215,25 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 	stop = () => {
 		let cmd = this.props.node.component.commands?.stop!;
-		this.setState({status: 'STOPPING'});
-		let runner = this.executor.runner(cmd.steps);
+		this.setState({status: ComponentStyleStatus.STOPPING});
+		let runner = this.executor.runner(KeyCommand.STOP, cmd.steps);
+		let d = new TextDecoder();
+		let context = { test: new Map<string, string>() }
+		let instance = runner({ id: 'thisEnvironment', context });
+		instance.channels.out.onReceive = (data: Uint8Array | null) => {
+			if (data) {
+				console.info(d.decode(data));
+			}
+			return true;
+		};
+		
+		instance.run([]);
+	}
+
+	status = () => {
+		let cmd = this.props.node.component.commands?.stop!;
+		this.setState({status: ComponentStyleStatus.CHECKING});
+		let runner = this.executor.runner(KeyCommand.STATUS, cmd.steps);
 		let d = new TextDecoder();
 		let context = { test: new Map<string, string>() }
 		let instance = runner({ id: 'thisEnvironment', context });
@@ -235,6 +299,12 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 								<this.Button_stop onClick={this.stop}>
 									<this.Icon className="fa fa-stop-circle"></this.Icon>
 								</this.Button_stop>
+							}
+
+							{this.hasStatus &&
+								<this.Button_status onClick={this.status}>
+									<this.Icon className="fa fa-question-circle"></this.Icon>
+								</this.Button_status>
 							}
 							
 						</this.ButtonsPanel>

@@ -1,22 +1,24 @@
 import * as signalr from '@microsoft/signalr';
-import { DiagramModel } from '@projectstorm/react-diagrams';
-import { toast } from 'react-toastify';
 import { CacheInfo } from '../Model/CacheInfo';
-import { JsonType, ResponseFactory } from '../Model/Responses/Response';
-import { SystemDiagramModel } from '../Model/SystemDiagramModel';
+import { RequestFactory } from '../Model/Communication/Request';
+import { AppArray } from '../Model/Model';
 
 export class ComponentService {
+    private component: AppArray.Model.Component;
     private cacheInfo: CacheInfo;
     private onConnected: () => void;
     private onError: (err: any) => void;
     private onCommandReceived: (payload: any) => void;
+    private onStatusUpdated: (payload: any) => void;
     private socket?: signalr.HubConnection;
 
-    constructor(cacheInfo: CacheInfo, onConnected: () => void, onError: (err: any) => void, onCommandReceived: (payload: any) => void) {
+    constructor(cacheInfo: CacheInfo, component: AppArray.Model.Component, onConnected: () => void, onError: (err: any) => void, onCommandReceived: (payload: any) => void, onStatusUpdated: (payload: any) => void) {
         this.cacheInfo = cacheInfo;
+        this.component = component;
         this.onConnected = onConnected;
         this.onError = onError;
         this.onCommandReceived = onCommandReceived;
+        this.onStatusUpdated = onStatusUpdated;
     }
 
     async connect() {
@@ -27,7 +29,8 @@ export class ComponentService {
 								.withUrl(url, signalr.HttpTransportType.WebSockets)
 								.build();
 								
-        this.socket.on('statusUpdated', this.onCommandReceived);
+        this.socket.on('getCommandResult', this.onCommandReceived);
+        this.socket.on('statusUpdated', this.onStatusUpdated);
         this.socket.onclose(this.onError);
 		await this.socket?.start().then(this.onConnected).catch(this.onError);
     }
@@ -36,7 +39,8 @@ export class ComponentService {
         await this.socket?.stop();
     }
 
-    async sendCommand(payload: any) {
-        this.socket?.send("sendCommand", payload);
+    async sendCommand(id: string, payload: any) {
+        const req = new RequestFactory().builSendCommandRequest(id, payload, this.component.id)
+        this.socket?.send("sendCommand", JSON.stringify(req));
     }
 }

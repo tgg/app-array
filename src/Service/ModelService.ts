@@ -2,10 +2,10 @@ import * as signalr from '@microsoft/signalr';
 import { DiagramModel } from '@projectstorm/react-diagrams';
 import { toast } from 'react-toastify';
 import { CacheInfo } from '../Model/CacheInfo';
-import { JsonType, ResponseFactory } from '../Model/Responses/Response';
+import { JsonType, NewModelResponse, ResponseFactory } from '../Model/Communication/Response';
 import { SystemDiagramModel } from '../Model/SystemDiagramModel';
 
-export class ModelResponseHandler {
+class ModelResponseHandler {
     handleSendModelResponse(payload: any, onModelSaved: (valid: boolean, path: String) => void) {
         const resp = new ResponseFactory().buildHubResponse(payload);
         if(resp.type === JsonType.TypeError) {
@@ -13,7 +13,7 @@ export class ModelResponseHandler {
             onModelSaved(false, "");
         } 
         else if(resp.type === JsonType.TypeNewModel) {
-            const newModelResp = new ResponseFactory().buildNewModelResponseDirectly(payload);
+            const newModelResp = new ResponseFactory().buildInnerResponse<NewModelResponse>(payload);
             toast.info(`Model ${newModelResp.id} registered with path ${newModelResp.path}`)
             onModelSaved(true, newModelResp.path);
         }
@@ -24,7 +24,7 @@ export class ModelResponseHandler {
     }
 
     handleNewModelReceived(payload: any) {
-        const newModelResp = new ResponseFactory().buildNewModelResponseDirectly(payload);
+        const newModelResp = new ResponseFactory().buildInnerResponse<NewModelResponse>(payload);
         toast.info(`New model have been registered with path ${newModelResp.path}`)
     }
 }
