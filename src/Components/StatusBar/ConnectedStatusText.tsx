@@ -17,6 +17,20 @@ const StatusDot = styled.span`
     margin-right: 0.5em;
 `;
 
+const Icon = styled.i`
+    border: none;
+    cursor: pointer;
+    font-size:1.2em;
+    color: ${(p: { color: any; }) => p.color};
+    margin-right: 0.2em;
+    &:hover {
+        color: white;
+    }
+    &:active {
+        color: grey;
+    }
+`;
+
 const StyledText = styled.p`
     margin-left: auto; 
     margin-right: 0;
@@ -57,7 +71,7 @@ export class ConnectedStatusText extends React.Component<ConnectedStatusTextProp
         color = this.props.isConnected ? "green" : "red";
         label = this.props.justDot ? "" : this.props.isConnected ? "Connected" : "Not connected";
         return(
-            <StyledText data-text={this.props.path} leftvalue={leftValue} widthvalue={widthValue}><StatusDot background={color}></StatusDot>{label}</StyledText>
+            <StyledText data-text={this.props.path} leftvalue={leftValue} widthvalue={widthValue}><Icon className="fa fa-plug" color={color}></Icon>{label}</StyledText>
         );
     }
 }

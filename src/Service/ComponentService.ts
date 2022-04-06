@@ -39,7 +39,7 @@ export class ComponentService {
         await this.socket?.stop();
     }
 
-    async sendCommand(id: string, payload: any) {
+    sendCommand(id: string, payload: any) {
         const req = new RequestFactory().builSendCommandRequest(id, payload, this.component.id)
         this.socket?.send("sendCommand", JSON.stringify(req));
     }

@@ -6,6 +6,8 @@ import createEngine, {
 	DiagramModel,
 	PathFindingLinkFactory
 } from '@projectstorm/react-diagrams';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { CanvasWidget } from '@projectstorm/react-canvas-core';
 
 import { DemoButton, DemoWorkspaceWidget } from './Components/DemoWorkspaceWidget';
@@ -19,9 +21,9 @@ import { AppArray } from './Model/Model';
 import { SystemDiagramModel } from './Model/SystemDiagramModel';
 import { ConnectedStatusText } from './Components/StatusBar/ConnectedStatusText';
 import { ModelService } from './Service/ModelService';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { ComponentNodeModel } from './Components/Diagram/ComponentNodeModel';
+import { EnvironmentComboBox } from './Components/StatusBar/EnvironmentComboBox';
+import { Environment, environmentsToOptions } from './Model/Environment';
 
 export interface SystemWidgetProps {
 	diagramEngine: DiagramEngine;
@@ -34,6 +36,8 @@ export interface SystemWidgetState {
 	disconnected: boolean;
 	connected: boolean;
 	connectionInfo: String;
+	environments: any;
+	environment: String;
 }
 
 class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState> {
@@ -66,6 +70,8 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 			connected: false,
 			disconnected: !this.props.cacheInfo.disconnected,
 			connectionInfo: this.props.cacheInfo.host,
+			environments: [],
+			environment: "",
 		};
 	}
 
@@ -81,15 +87,18 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 	}
 
 	onModelSaved = (valid: boolean, path: String) => {
+		let appEnvs:Environment[] | undefined;
 		if(valid) {
 			this.props.cacheInfo.path = path;
 		}
 		if(this.state.model instanceof SystemDiagramModel) {
 			const systemModel = this.state.model as SystemDiagramModel;
 			this.props.cacheInfo.path = `/${systemModel.getApplication().id}`;
+			appEnvs = systemModel.getApplication().environments;
 		}
 		if(!this.init) {
 			this.props.diagramEngine.setModel(this.state.model);
+			this.setState({environments: environmentsToOptions(appEnvs) });
 			this.updateCacheModel();
 		} else {
 			this.init = false;
@@ -141,6 +150,12 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		this.props.cacheInfo.disconnected = this.state.disconnected;
 		this.updateDisconnected();
 		this.updateNodes();
+	}
+
+	onEnvironmentChanged = (value: any, action: any) => {
+		this.setState({ environment: value.value }, () => {
+			this.updateNodes();
+		});
 	}
 
 	setCacheModel = () => {
@@ -201,6 +216,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		return (
 			<DemoWorkspaceWidget buttons={
 				<>
+					<EnvironmentComboBox environments={this.state.environments} onChange={this.onEnvironmentChanged}></EnvironmentComboBox>
 					<DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton>
 					<LoadButton onModelChange={(model) => this.onModelChange(model)}/>
 					<ClearButton onModelChange={(model) => this.onModelChange(model)}/>

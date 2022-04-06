@@ -137,8 +137,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStop:boolean;
 	private hasStatus:boolean;
 
-	private executor: Executor<Uint8Array,any>;
-	private componentService: ComponentService;
+	private executor?: Executor<Uint8Array,any>;
+	private componentService?: ComponentService;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
 	constructor(args: ComponentNodeWidgetProps | Readonly<ComponentNodeWidgetProps>) {
@@ -151,8 +151,10 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStop = this.props.node.hasCommand(KeyCommand.STOP);
 		this.hasStatus = this.props.node.hasCommand(KeyCommand.STATUS);
 
-		this.componentService = new ComponentService(this.props.cache, this.props.node.component, this.onConnected, this.onError, this.getCommandResult, this.onStatusUpdated);
-		this.executor = new ShellExecutor(this.componentService);
+		if(this.props.node.hasEnvironment()) {
+			this.componentService = new ComponentService(this.props.cache, this.props.node.component, this.onConnected, this.onError, this.getCommandResult, this.onStatusUpdated);
+			this.executor = new ShellExecutor(this.componentService);
+		}
 
 		this.state = {
 			status: ComponentStyleStatus.UNKNOWN,
@@ -197,9 +199,11 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	}
 	
 	start = () => {
+		if(!this.props.node.hasEnvironment())
+			return;
 		let cmd = this.props.node.component.commands?.start!;
 		this.setState({status: ComponentStyleStatus.STARTING});
-		let runner = this.executor.runner(KeyCommand.START, cmd.steps);
+		let runner = this.executor!.runner(KeyCommand.START, cmd.steps);
 		let d = new TextDecoder();
 		let context = { test: new Map<string, string>() }
 		let instance = runner({ id: 'thisEnvironment', context });
@@ -214,9 +218,11 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	}
 
 	stop = () => {
+		if(!this.props.node.hasEnvironment())
+			return;
 		let cmd = this.props.node.component.commands?.stop!;
 		this.setState({status: ComponentStyleStatus.STOPPING});
-		let runner = this.executor.runner(KeyCommand.STOP, cmd.steps);
+		let runner = this.executor!.runner(KeyCommand.STOP, cmd.steps);
 		let d = new TextDecoder();
 		let context = { test: new Map<string, string>() }
 		let instance = runner({ id: 'thisEnvironment', context });
@@ -231,9 +237,11 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	}
 
 	status = () => {
+		if(!this.props.node.hasEnvironment())
+			return;
 		let cmd = this.props.node.component.commands?.status!;
 		this.setState({status: ComponentStyleStatus.CHECKING});
-		let runner = this.executor.runner(KeyCommand.STATUS, cmd.steps);
+		let runner = this.executor!.runner(KeyCommand.STATUS, cmd.steps);
 		let d = new TextDecoder();
 		let context = { test: new Map<string, string>() }
 		let instance = runner({ id: 'thisEnvironment', context });
@@ -248,19 +256,23 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	}
 
 	async componentDidMount() {
-		await this.componentService.connect();
+		if(this.props.node.hasEnvironment())
+			await this.componentService!.connect();
 	}
 
 	async componentWillUnmount() {
-		this.componentService.disconnect();
+		if(this.props.node.hasEnvironment())
+			this.componentService!.disconnect();
 	}
 
 	onDisconnected = () => {
+		if(!this.props.node.hasEnvironment())
+			return;
 		if (this.props.cache.disconnected) {
-			this.componentService.disconnect();
+			this.componentService!.disconnect();
 		}
 		else {
-			this.componentService.connect();
+			this.componentService!.connect();
 		}
 	}
 
