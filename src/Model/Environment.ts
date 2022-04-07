@@ -1,4 +1,4 @@
-import { Options } from "../Components/StatusBar/EnvironmentComboBox";
+import { EnvironmentOptions } from "../Components/StatusBar/EnvironmentComboBox";
 
 export type Context = {
     [key: string]: Map<string, string>;
@@ -7,9 +7,19 @@ export type Context = {
 // That's how to extend a type :-)
 export type Environment = { id: string, context: Context }
 
-export const environmentsToOptions = (environments?: Environment[]): Options[] => {
-    let options:Options[] = [];
+export const formattedId = (environment: Environment): string => {
+    return environment.id.replaceAll(" ", "_");
+}
+
+export const environmentsToOptions = (paths: String[], environments?: Environment[]): EnvironmentOptions[] => {
+    let options:EnvironmentOptions[] = [];
     if(environments !== undefined)
-        environments!.forEach(e => options.push({ value: e.id, label: e.id }));
+        environments!.forEach(e => { 
+            const id = formattedId(e);
+            const foundPaths = paths.filter(p => p.includes(id));
+            if(foundPaths?.length !== undefined && foundPaths?.length > 0) {
+                options.push({ value: e.id, label: e.id, path: foundPaths?.at(0)! })
+            }
+        });
     return options;
 }

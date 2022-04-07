@@ -22,12 +22,12 @@ import { SystemDiagramModel } from './Model/SystemDiagramModel';
 import { ConnectedStatusText } from './Components/StatusBar/ConnectedStatusText';
 import { ModelService } from './Service/ModelService';
 import { ComponentNodeModel } from './Components/Diagram/ComponentNodeModel';
-import { EnvironmentComboBox } from './Components/StatusBar/EnvironmentComboBox';
+import { EnvironmentComboBox, EnvironmentOptions } from './Components/StatusBar/EnvironmentComboBox';
 import { Environment, environmentsToOptions } from './Model/Environment';
 
 export interface SystemWidgetProps {
 	diagramEngine: DiagramEngine;
-	cacheInfo: CacheInfo;
+	cache: CacheInfo;
 }
 
 export interface SystemWidgetState {
@@ -37,7 +37,8 @@ export interface SystemWidgetState {
 	connected: boolean;
 	connectionInfo: String;
 	environments: any;
-	environment: String;
+	environment: EnvironmentOptions | undefined | null;
+	path: String;
 }
 
 class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState> {
@@ -48,8 +49,8 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 	constructor(props: any) {
 		super(props);
 		this.init = true;
-		this.props.cacheInfo.host = "http://localhost:9090";
-		this.modelService = new ModelService(this.props.cacheInfo, this.onConnected, this.onConnectionError, this.onModelSaved);
+		this.props.cache.host = "http://localhost:9090";
+		this.modelService = new ModelService(this.props.cache, this.onConnected, this.onConnectionError, this.onModelSaved);
 		
 		let model = new DiagramModel();
 		
@@ -66,39 +67,43 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 
 		this.state = {
 			model,
-			checked: !this.props.cacheInfo.keepModel,
+			checked: !this.props.cache.keepModel,
 			connected: false,
-			disconnected: !this.props.cacheInfo.disconnected,
-			connectionInfo: this.props.cacheInfo.host,
+			disconnected: !this.props.cache.disconnected,
+			connectionInfo: this.props.cache.host,
 			environments: [],
-			environment: "",
+			environment: undefined,
+			path: "",
 		};
 	}
 
 	onConnected = () => {
 		toast.success("Connected")
-		this.setState({connected: true, connectionInfo: this.props.cacheInfo.host});
+		this.setState({connected: true, connectionInfo: this.props.cache.host});
 		this.modelService.sendModel(this.state.model);
 	}
 
 	onConnectionError = (err: any) => {
-		toast.error("Connection lost to " + this.props.cacheInfo.host)
-		this.setState({connected: false, connectionInfo: `${err} on ${this.props.cacheInfo.host}`});
+		toast.error("Connection lost to " + this.props.cache.host)
+		this.setState({connected: false, connectionInfo: `${err} on ${this.props.cache.host}`});
 	}
 
-	onModelSaved = (valid: boolean, path: String) => {
+	onModelSaved = (valid: boolean, paths: String[]) => {
 		let appEnvs:Environment[] | undefined;
-		if(valid) {
-			this.props.cacheInfo.path = path;
-		}
 		if(this.state.model instanceof SystemDiagramModel) {
 			const systemModel = this.state.model as SystemDiagramModel;
-			this.props.cacheInfo.path = `/${systemModel.getApplication().id}`;
 			appEnvs = systemModel.getApplication().environments;
 		}
 		if(!this.init) {
 			this.props.diagramEngine.setModel(this.state.model);
-			this.setState({environments: environmentsToOptions(appEnvs) });
+			const environments = environmentsToOptions(paths, appEnvs);
+			const env = environments.find(e => e.path === this.state.path);
+			if(env !== undefined) {
+				this.setState({environment: env, path: env.path, environments: environments });
+			}
+			else {
+				this.setState({environment: null, path: "", environments: environments });
+			}
 			this.updateCacheModel();
 		} else {
 			this.init = false;
@@ -109,14 +114,14 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 	}
 
 	updateCacheModel = () => {
-		if (this.props.cacheInfo.keepModel && this.state.model instanceof SystemDiagramModel) {
+		if (this.props.cache.keepModel && this.state.model instanceof SystemDiagramModel) {
 			const systemModel = this.state.model as SystemDiagramModel;
-			this.props.cacheInfo.model = JSON.stringify(systemModel.getApplication());
+			this.props.cache.model = JSON.stringify(systemModel.getApplication());
 		}
 		else {
-			this.props.cacheInfo.model = "";
+			this.props.cache.model = "";
 		}
-		this.props.cacheInfo.save();
+		this.props.cache.save();
 	};
 
 	onModelChange = (model: DiagramModel) => {
@@ -129,38 +134,38 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		this.setState(state => ({
 			checked: !event.target.checked
 		}));
-		this.props.cacheInfo.keepModel = this.state.checked;
+		this.props.cache.keepModel = this.state.checked;
 		this.updateCacheModel();
 	}
 
 	updateDisconnected = async () => {
-		if (this.props.cacheInfo.disconnected) {
+		if (this.props.cache.disconnected) {
 			await this.modelService.disconnect();
 		}
 		else {
 			await this.modelService.connect();
 		}
-		this.props.cacheInfo.save();
+		this.props.cache.save();
 	};
 
 	onDisconnectedChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
 		this.setState(state => ({
 			disconnected: !event.target.checked
 		}));
-		this.props.cacheInfo.disconnected = this.state.disconnected;
+		this.props.cache.disconnected = this.state.disconnected;
 		this.updateDisconnected();
 		this.updateNodes();
 	}
 
 	onEnvironmentChanged = (value: any, action: any) => {
-		this.setState({ environment: value.value }, () => {
+		this.setState({ environment: value, path: value !== null ? value.path : "" }, () => {
 			this.updateNodes();
 		});
 	}
 
 	setCacheModel = () => {
-		if(this.props.cacheInfo.model !== "") {
-			const application = JSON.parse(this.props.cacheInfo.model as string) as AppArray.Model.Application;
+		if(this.props.cache.model !== "") {
+			const application = JSON.parse(this.props.cache.model as string) as AppArray.Model.Application;
 			const model = new SystemDiagramModel(application);
 			this.setState({ model }, () => {
 				this.modelService.sendModel(model);
@@ -169,18 +174,18 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 	}
 
 	componentDidMount = async () => {
-		if(!this.props.cacheInfo.disconnected)
+		if(!this.props.cache.disconnected)
 		{
 			await this.updateDisconnected();
 			if(!this.state.connected)
 			{
-				this.onModelSaved(false, "");
+				this.onModelSaved(false, []);
 			}
 			this.setCacheModel();
 		}
 		else 
 		{
-			this.onModelSaved(false, "");
+			this.onModelSaved(false, []);
 			this.setCacheModel();
 		}
 	}
@@ -191,12 +196,17 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 
 	updateNodes = () => {
 		const model = this.props.diagramEngine.getModel();
-		const nodes = model.getNodes();
-		nodes.forEach((val, i, arr) => {
-			const node = val as ComponentNodeModel;
-			if(node.widget)
-				node.widget.onDisconnected();
-		});
+		if(model instanceof SystemDiagramModel) {
+			const systemModel = model as SystemDiagramModel;
+			const nodes = systemModel.getNodes();
+			nodes.forEach((val, i, arr) => {
+				const node = val as ComponentNodeModel;
+				node.environment = systemModel.getApplication().environments?.find(e => e.id === this.state.environment?.value);
+				node.path = this.state.environment?.path;
+				if(node.widget)
+					node.widget.updateConnection();
+			});
+		}
 	}
 
 	autoDistribute = () => {
@@ -216,7 +226,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		return (
 			<DemoWorkspaceWidget buttons={
 				<>
-					<EnvironmentComboBox environments={this.state.environments} onChange={this.onEnvironmentChanged}></EnvironmentComboBox>
+					<EnvironmentComboBox environments={this.state.environments} onChange={this.onEnvironmentChanged} value={this.state.environment}></EnvironmentComboBox>
 					<DemoButton onClick={this.autoDistribute}>Re-distribute</DemoButton>
 					<LoadButton onModelChange={(model) => this.onModelChange(model)}/>
 					<ClearButton onModelChange={(model) => this.onModelChange(model)}/>
@@ -230,7 +240,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 				}
 				statusItems={
 					<>
-					<ConnectedStatusText isConnected={this.state.connected} path={this.state.connectionInfo}></ConnectedStatusText>
+					<ConnectedStatusText isConnected={this.state.connected} host={this.state.connectionInfo} path={this.state.path}></ConnectedStatusText>
 					</>
 				}>
 				<DemoCanvasWidget>
@@ -248,7 +258,7 @@ function App() {
 	const factory = new ComponentNodeFactory(cacheInfo);
 	engine.getNodeFactories().registerFactory(factory);
 
-	return <SystemWidget diagramEngine={engine} cacheInfo={cacheInfo} />;
+	return <SystemWidget diagramEngine={engine} cache={cacheInfo} />;
 }
 
 export default App;

@@ -1,17 +1,13 @@
 import * as React from 'react';
-import * as signalr from '@microsoft/signalr';
 import { DiagramEngine} from '@projectstorm/react-diagrams';
 import { map } from 'lodash';
 import { toast } from 'react-toastify';
 import { ComponentNodeModel } from './ComponentNodeModel';
-import { Context, Environment } from '../../Model/Environment';
 import { Executor, ShellExecutor } from '../../Service/Executor';
 import { CacheInfo } from '../../Model/CacheInfo';
-import { KeyCommand } from '../../Model/Model';
-import { ConnectedStatusText } from '../StatusBar/ConnectedStatusText';
+import { AppArray, KeyCommand } from '../../Model/Model';
 import { ComponentService } from '../../Service/ComponentService';
 import { CommandResponse, JsonType, ResponseFactory, UpdateResponse, UpdateStatus } from '../../Model/Communication/Response';
-import { isThisTypeNode } from 'typescript';
 
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
@@ -139,6 +135,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 	private executor?: Executor<Uint8Array,any>;
 	private componentService?: ComponentService;
+	private initialized: boolean;
+	private hasBeenMounted: boolean;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
 	constructor(args: ComponentNodeWidgetProps | Readonly<ComponentNodeWidgetProps>) {
@@ -150,17 +148,29 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStart = this.props.node.hasCommand(KeyCommand.START);
 		this.hasStop = this.props.node.hasCommand(KeyCommand.STOP);
 		this.hasStatus = this.props.node.hasCommand(KeyCommand.STATUS);
-
-		if(this.props.node.hasEnvironment()) {
-			this.componentService = new ComponentService(this.props.cache, this.props.node.component, this.onConnected, this.onError, this.getCommandResult, this.onStatusUpdated);
-			this.executor = new ShellExecutor(this.componentService);
-		}
+		this.initialized = false;
+		this.hasBeenMounted = false;
 
 		this.state = {
 			status: ComponentStyleStatus.UNKNOWN,
 			connected: false
 		}
     }
+
+	initializeConnection = async () => {
+		if(this.componentService !== undefined && this.initialized) {
+			await this.componentService!.disconnect();
+			this.componentService = undefined;
+			this.initialized = false;
+		}
+		if(this.props.node.hasEnvironment() && !this.initialized) {
+			this.componentService = new ComponentService(this.props.cache, this.props.node, this.onConnected, this.onError, this.getCommandResult, this.onStatusUpdated);
+			this.executor = new ShellExecutor(this.componentService);
+			this.initialized = true;
+		}
+		if(this.componentService !== undefined)
+			await this.componentService!.connect();
+	}
 
 	getCommandResult = (payload: any) => {
 		const resp = new ResponseFactory().buildInnerResponse<CommandResponse>(payload);
@@ -189,90 +199,68 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	}
 
 	onConnected = () => {
-		toast.success(`Component connected ${this.props.node.component.id} to ${this.props.cache.path}`);
+		toast.success(`Component connected ${this.props.node.component.id} to ${this.props.node.path!}`);
 		this.setState({connected: true});
 	}
 	
 	onError = (err: any) => {
-		toast.error(`Component ${this.props.node.component.id} failed to connect to ${this.props.cache.path} : ${err}`);
-		this.setState({connected: false});
+		toast.error(`Component ${this.props.node.component.id} failed to connect to ${this.props.node.path!}`);
+		if(this.hasBeenMounted)
+			this.setState({connected: false});
+	}
+
+	run = (cmd: AppArray.Model.Command, status: ComponentStyleStatus, keyCmd: KeyCommand) => {
+		this.setState({status: status});
+		let runner = this.executor!.runner(keyCmd, cmd.steps);
+		let d = new TextDecoder();
+		let context = { test: new Map<string, string>() }
+		let instance = runner({ id: 'thisEnvironment', context });
+		instance.channels.out.onReceive = (data: Uint8Array | null) => {
+			if (data) {
+				console.info(d.decode(data));
+			}
+			return true;
+		};
+		
+		instance.run([]);
 	}
 	
 	start = () => {
-		if(!this.props.node.hasEnvironment())
-			return;
-		let cmd = this.props.node.component.commands?.start!;
-		this.setState({status: ComponentStyleStatus.STARTING});
-		let runner = this.executor!.runner(KeyCommand.START, cmd.steps);
-		let d = new TextDecoder();
-		let context = { test: new Map<string, string>() }
-		let instance = runner({ id: 'thisEnvironment', context });
-		instance.channels.out.onReceive = (data: Uint8Array | null) => {
-			if (data) {
-				console.info(d.decode(data));
-			}
-			return true;
-		};
-		
-		instance.run([]);
+		if(this.props.node.hasEnvironment() && this.state.connected)
+			this.run(this.props.node.component.commands?.start!, ComponentStyleStatus.STARTING, KeyCommand.START);
 	}
 
 	stop = () => {
-		if(!this.props.node.hasEnvironment())
-			return;
-		let cmd = this.props.node.component.commands?.stop!;
-		this.setState({status: ComponentStyleStatus.STOPPING});
-		let runner = this.executor!.runner(KeyCommand.STOP, cmd.steps);
-		let d = new TextDecoder();
-		let context = { test: new Map<string, string>() }
-		let instance = runner({ id: 'thisEnvironment', context });
-		instance.channels.out.onReceive = (data: Uint8Array | null) => {
-			if (data) {
-				console.info(d.decode(data));
-			}
-			return true;
-		};
-		
-		instance.run([]);
+		if(this.props.node.hasEnvironment() && this.state.connected)
+			this.run(this.props.node.component.commands?.stop!, ComponentStyleStatus.STOPPING, KeyCommand.STOP);
 	}
 
 	status = () => {
-		if(!this.props.node.hasEnvironment())
-			return;
-		let cmd = this.props.node.component.commands?.status!;
-		this.setState({status: ComponentStyleStatus.CHECKING});
-		let runner = this.executor!.runner(KeyCommand.STATUS, cmd.steps);
-		let d = new TextDecoder();
-		let context = { test: new Map<string, string>() }
-		let instance = runner({ id: 'thisEnvironment', context });
-		instance.channels.out.onReceive = (data: Uint8Array | null) => {
-			if (data) {
-				console.info(d.decode(data));
-			}
-			return true;
-		};
-		
-		instance.run([]);
+		if(this.props.node.hasEnvironment() && this.state.connected)
+			this.run(this.props.node.component.commands?.status!, ComponentStyleStatus.CHECKING, KeyCommand.STATUS);
 	}
 
 	async componentDidMount() {
-		if(this.props.node.hasEnvironment())
-			await this.componentService!.connect();
+		this.hasBeenMounted = true;
+		await this.initializeConnection();
+	}
+
+	disconnect = () => {
+		if(this.componentService !== undefined)
+			this.componentService!.disconnect();
 	}
 
 	async componentWillUnmount() {
-		if(this.props.node.hasEnvironment())
-			this.componentService!.disconnect();
+		this.hasBeenMounted = false;
+		this.disconnect();
 	}
 
-	onDisconnected = () => {
-		if(!this.props.node.hasEnvironment())
-			return;
+	updateConnection = () => {
 		if (this.props.cache.disconnected) {
-			this.componentService!.disconnect();
+			this.disconnect();
 		}
 		else {
-			this.componentService!.connect();
+			this.initializeConnection();
 		}
 	}
 
@@ -286,7 +274,6 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 						<this.Title>
 							<this.TitleName>{this.props.node.getOptions().name}</this.TitleName>
-							<ConnectedStatusText justDot={true} isConnected={this.state.connected} path={this.props.cache.path}></ConnectedStatusText>
 						</this.Title>
 
 						<this.Ports>

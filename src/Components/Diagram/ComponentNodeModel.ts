@@ -5,7 +5,8 @@ import { ComponentNodeWidget } from "./ComponentNodeWidget";
 
 export class ComponentNodeModel extends DefaultNodeModel {
     readonly component: AppArray.Model.Component;
-    readonly environment?: Environment;
+    environment?: Environment;
+    path?: String;
     widget?: ComponentNodeWidget;
 
     constructor(component: AppArray.Model.Component, environment?: Environment) {

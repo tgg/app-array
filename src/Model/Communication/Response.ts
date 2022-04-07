@@ -3,6 +3,7 @@ import { SendCommandRequest } from "./Request";
 export enum JsonType {
 	TypeError    = "Error",
 	TypeNewModel = "NewModel",
+    TypeExistingModel = "ExistingModel",
 	TypeMessage  = "Message",
 	TypeUpdate   = "Update",
 	TypeCommandResponse = "CommandResponse"
@@ -22,7 +23,8 @@ export interface HubResponse extends Response {
 
 export interface NewModelResponse extends Response {
     id: String;
-    path: String;
+    paths: String[];
+    msg: String;
 }
 
 export interface UpdateResponse extends Response {

@@ -16,14 +16,12 @@ export class CacheInfo implements CacheModelInfo {
     disconnected: boolean;
     model: String;
     host: String;
-    path: String;
 
     constructor(json?: any) {
         this.keepModel = json?.keepModel ?? false;
         this.disconnected = json?.disconnected ?? false;
         this.model = json?.model ?? "";
         this.host = json?.host ?? "";
-        this.path = "";
     }
 
     save(): void{
