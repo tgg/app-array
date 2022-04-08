@@ -122,12 +122,12 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 	}
 
 	onComponentServiceConnected = () => {
-		toast.success(`Connected to ${this.state.path}`);
+		toast.success(`Connected to ${this.props.cache.path}`);
 		this.setState({connectedComponent: true});
 	}
 	
 	onComponentServiceError = (err: any) => {
-		toast.error(`Failed to connect to ${this.state.path}`);
+		toast.error(`Failed to connect to ${this.props.cache.path}`);
 		this.setState({connectedComponent: false});
 	}
 
@@ -168,6 +168,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 
 	onModelChange = (model: DiagramModel) => {
 		this.setState({ model }, async () => {
+			await this.componentServiceDisconnect();
 			await this.modelService.sendModel(model);
 		});
 	};
@@ -180,17 +181,23 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		this.updateCacheModel();
 	}
 
+	componentServiceDisconnect =  async () => {
+		if(this.state.connectedComponent) {
+			await this.componentService.disconnect();
+			this.updateNodes(this.initializeNodeConnection);
+		}
+	}
+
 	updateDisconnected = async () => {
 		if (this.props.cache.disconnected) {
 			await this.modelService.disconnect();
-			if(this.componentService !== undefined) {
-                this.componentService.disconnect();
-			}
+			await this.componentServiceDisconnect();
 		}
 		else {
 			await this.modelService.connect();
 			if(this.state.path.trim() !== "") {
-                this.componentService.connect();
+                await this.componentService.connect();
+				this.updateNodes(this.initializeNodeConnection);
 			}
 		}
 		this.props.cache.save();
@@ -202,15 +209,16 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		}));
 		this.props.cache.disconnected = this.state.disconnected;
 		this.updateDisconnected();
-		this.updateNodes(this.initializeNodeConnection);
 	}
 
 	onEnvironmentChanged = (value: any, action: any) => {
 		this.setState({ environment: value, path: value !== null ? value.path : "" }, async () => {
-			await this.componentService.disconnect();
+			await this.componentServiceDisconnect();
 			this.props.cache.path = this.state.path;
-			await this.componentService.connect();
-			this.updateNodes(this.initializeNodeConnection);
+			if(this.state.path.trim() !== "" && !this.props.cache.disconnected) {
+				await this.componentService.connect();
+				this.updateNodes(this.initializeNodeConnection);
+			}
 		});
 	}
 

@@ -156,8 +156,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		if(this.executor !== undefined && this.state.connected) {
 			this.executor = undefined;
 			this.setState({connected: false});
-		}
-		if(this.props.node.hasService() && !this.state.connected) {
+		} else if(this.props.node.hasService() && !this.state.connected) {
 			this.executor = new ShellExecutor(this.props.node);
 			this.setState({connected: true});
 		}
