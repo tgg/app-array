@@ -24,6 +24,8 @@ import { ModelService } from './Service/ModelService';
 import { ComponentNodeModel } from './Components/Diagram/ComponentNodeModel';
 import { EnvironmentComboBox, EnvironmentOptions } from './Components/StatusBar/EnvironmentComboBox';
 import { Environment, environmentsToOptions } from './Model/Environment';
+import { ComponentService } from './Service/ComponentService';
+import { CommandResponse, JsonType, ResponseFactory, UpdateResponse } from './Model/Communication/Response';
 
 export interface SystemWidgetProps {
 	diagramEngine: DiagramEngine;
@@ -34,8 +36,10 @@ export interface SystemWidgetState {
 	model: DiagramModel;
 	checked: boolean;
 	disconnected: boolean;
-	connected: boolean;
-	connectionInfo: String;
+	connectedModel: boolean;
+	connectedComponent: boolean;
+	connectionInfoModel: String;
+	connectionInfoComponent: String;
 	environments: any;
 	environment: EnvironmentOptions | undefined | null;
 	path: String;
@@ -44,13 +48,15 @@ export interface SystemWidgetState {
 class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState> {
 	distributionEngine: DagreEngine;
 	modelService: ModelService;
+	componentService: ComponentService;
 	init: boolean;
 
 	constructor(props: any) {
 		super(props);
 		this.init = true;
 		this.props.cache.host = "http://localhost:9090";
-		this.modelService = new ModelService(this.props.cache, this.onConnected, this.onConnectionError, this.onModelSaved);
+		this.modelService = new ModelService(this.props.cache, this.onModelServiceConnected, this.onModelServiceConnectionError, this.onModelSaved);
+		this.componentService = new ComponentService(this.props.cache, this.onComponentServiceConnected, this.onComponentServiceError, this.getCommandResult, this.onStatusUpdated);
 		
 		let model = new DiagramModel();
 		
@@ -68,24 +74,26 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		this.state = {
 			model,
 			checked: !this.props.cache.keepModel,
-			connected: false,
+			connectedModel: false,
+			connectedComponent: false,
 			disconnected: !this.props.cache.disconnected,
-			connectionInfo: this.props.cache.host,
+			connectionInfoModel: this.props.cache.host,
+			connectionInfoComponent: this.props.cache.host,
 			environments: [],
 			environment: undefined,
 			path: "",
 		};
 	}
 
-	onConnected = () => {
+	onModelServiceConnected = () => {
 		toast.success("Connected")
-		this.setState({connected: true, connectionInfo: this.props.cache.host});
+		this.setState({connectedModel: true, connectionInfoModel: this.props.cache.host});
 		this.modelService.sendModel(this.state.model);
 	}
 
-	onConnectionError = (err: any) => {
+	onModelServiceConnectionError = (err: any) => {
 		toast.error("Connection lost to " + this.props.cache.host)
-		this.setState({connected: false, connectionInfo: `${err} on ${this.props.cache.host}`});
+		this.setState({connectedModel: false, connectionInfoModel: `${err} on ${this.props.cache.host}`});
 	}
 
 	onModelSaved = (valid: boolean, paths: String[]) => {
@@ -111,6 +119,40 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		setTimeout(() => {
 			this.autoDistribute();
 		}, 1000);
+	}
+
+	onComponentServiceConnected = () => {
+		toast.success(`Connected to ${this.state.path}`);
+		this.setState({connectedComponent: true});
+	}
+	
+	onComponentServiceError = (err: any) => {
+		toast.error(`Failed to connect to ${this.state.path}`);
+		this.setState({connectedComponent: false});
+	}
+
+	getCommandResult = (payload: any) => {
+		const resp = new ResponseFactory().buildHubResponse(payload);
+		if(resp.type === JsonType.TypeCommandResponse) {
+			const updateResponse = new ResponseFactory().buildInnerResponse<CommandResponse>(payload);
+			this.updateNodes((node: ComponentNodeModel) => {
+				if(updateResponse.componentId === node.component.id && node.widget)
+					node.widget.getCommandResult(updateResponse);
+			})
+		}
+	}
+
+	onStatusUpdated = (payload: any) => {
+		const resp = new ResponseFactory().buildHubResponse(payload);
+		if(resp.type === JsonType.TypeUpdate) {
+			const updateResponse = new ResponseFactory().buildInnerResponse<UpdateResponse>(payload);
+			this.updateNodes((node: ComponentNodeModel) => {
+				if(updateResponse.componentId === node.component.id && node.widget)
+					node.widget.onStatusUpdated(updateResponse);
+			})
+		} else {
+			console.log(resp.msg);
+		}
 	}
 
 	updateCacheModel = () => {
@@ -141,9 +183,15 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 	updateDisconnected = async () => {
 		if (this.props.cache.disconnected) {
 			await this.modelService.disconnect();
+			if(this.componentService !== undefined) {
+                this.componentService.disconnect();
+			}
 		}
 		else {
 			await this.modelService.connect();
+			if(this.state.path.trim() !== "") {
+                this.componentService.connect();
+			}
 		}
 		this.props.cache.save();
 	};
@@ -154,12 +202,15 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		}));
 		this.props.cache.disconnected = this.state.disconnected;
 		this.updateDisconnected();
-		this.updateNodes();
+		this.updateNodes(this.initializeNodeConnection);
 	}
 
 	onEnvironmentChanged = (value: any, action: any) => {
-		this.setState({ environment: value, path: value !== null ? value.path : "" }, () => {
-			this.updateNodes();
+		this.setState({ environment: value, path: value !== null ? value.path : "" }, async () => {
+			await this.componentService.disconnect();
+			this.props.cache.path = this.state.path;
+			await this.componentService.connect();
+			this.updateNodes(this.initializeNodeConnection);
 		});
 	}
 
@@ -177,7 +228,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		if(!this.props.cache.disconnected)
 		{
 			await this.updateDisconnected();
-			if(!this.state.connected)
+			if(!this.state.connectedModel)
 			{
 				this.onModelSaved(false, []);
 			}
@@ -194,17 +245,20 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		await this.modelService.disconnect();
 	}
 
-	updateNodes = () => {
+	initializeNodeConnection = (node: ComponentNodeModel) => {
+		node.service = this.componentService;
+		if(node.widget)
+			node.widget.updateConnection();
+	}
+
+	updateNodes = (nodeAction: (node: ComponentNodeModel) => void) => {
 		const model = this.props.diagramEngine.getModel();
 		if(model instanceof SystemDiagramModel) {
 			const systemModel = model as SystemDiagramModel;
 			const nodes = systemModel.getNodes();
 			nodes.forEach((val, i, arr) => {
 				const node = val as ComponentNodeModel;
-				node.environment = systemModel.getApplication().environments?.find(e => e.id === this.state.environment?.value);
-				node.path = this.state.environment?.path;
-				if(node.widget)
-					node.widget.updateConnection();
+				nodeAction(node);
 			});
 		}
 	}
@@ -240,7 +294,8 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 				}
 				statusItems={
 					<>
-					<ConnectedStatusText isConnected={this.state.connected} host={this.state.connectionInfo} path={this.state.path}></ConnectedStatusText>
+					<ConnectedStatusText justDot isConnected={this.state.connectedComponent} host={this.state.connectionInfoComponent} path={this.state.path}></ConnectedStatusText>
+					<ConnectedStatusText isConnected={this.state.connectedModel} host={this.state.connectionInfoModel} path=""></ConnectedStatusText>
 					</>
 				}>
 				<DemoCanvasWidget>

@@ -134,9 +134,6 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStatus:boolean;
 
 	private executor?: Executor<Uint8Array,any>;
-	private componentService?: ComponentService;
-	private initialized: boolean;
-	private hasBeenMounted: boolean;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
 	constructor(args: ComponentNodeWidgetProps | Readonly<ComponentNodeWidgetProps>) {
@@ -148,8 +145,6 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStart = this.props.node.hasCommand(KeyCommand.START);
 		this.hasStop = this.props.node.hasCommand(KeyCommand.STOP);
 		this.hasStatus = this.props.node.hasCommand(KeyCommand.STATUS);
-		this.initialized = false;
-		this.hasBeenMounted = false;
 
 		this.state = {
 			status: ComponentStyleStatus.UNKNOWN,
@@ -158,22 +153,17 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
     }
 
 	initializeConnection = async () => {
-		if(this.componentService !== undefined && this.initialized) {
-			await this.componentService!.disconnect();
-			this.componentService = undefined;
-			this.initialized = false;
+		if(this.executor !== undefined && this.state.connected) {
+			this.executor = undefined;
+			this.setState({connected: false});
 		}
-		if(this.props.node.hasEnvironment() && !this.initialized) {
-			this.componentService = new ComponentService(this.props.cache, this.props.node, this.onConnected, this.onError, this.getCommandResult, this.onStatusUpdated);
-			this.executor = new ShellExecutor(this.componentService);
-			this.initialized = true;
+		if(this.props.node.hasService() && !this.state.connected) {
+			this.executor = new ShellExecutor(this.props.node);
+			this.setState({connected: true});
 		}
-		if(this.componentService !== undefined)
-			await this.componentService!.connect();
 	}
 
-	getCommandResult = (payload: any) => {
-		const resp = new ResponseFactory().buildInnerResponse<CommandResponse>(payload);
+	getCommandResult = (resp: CommandResponse) => {
 		switch(resp.commandId) {
 			case KeyCommand.START:
 			case KeyCommand.STATUS:
@@ -186,27 +176,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		console.log(`Received result ${resp.result} for command ${resp.command} for component ${resp.componentId}`);
 	}
 
-	onStatusUpdated = (payload: any) => {
-		const resp = new ResponseFactory().buildHubResponse(payload);
-		if(resp.type === JsonType.TypeUpdate) {
-			const updateResponse = new ResponseFactory().buildInnerResponse<UpdateResponse>(payload);
-			if(updateResponse.componentId === this.props.node.component.id) {
-				this.setState({ status: updateResponse.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STARTED : ComponentStyleStatus.STOPPED });
-			}
-		} else {
-			console.log(resp.msg);
-		}
-	}
-
-	onConnected = () => {
-		toast.success(`Component connected ${this.props.node.component.id} to ${this.props.node.path!}`);
-		this.setState({connected: true});
-	}
-	
-	onError = (err: any) => {
-		toast.error(`Component ${this.props.node.component.id} failed to connect to ${this.props.node.path!}`);
-		if(this.hasBeenMounted)
-			this.setState({connected: false});
+	onStatusUpdated = (updateResponse: UpdateResponse) => {
+		this.setState({ status: updateResponse.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STARTED : ComponentStyleStatus.STOPPED });
 	}
 
 	run = (cmd: AppArray.Model.Command, status: ComponentStyleStatus, keyCmd: KeyCommand) => {
@@ -226,42 +197,26 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	}
 	
 	start = () => {
-		if(this.props.node.hasEnvironment() && this.state.connected)
+		if(this.state.connected)
 			this.run(this.props.node.component.commands?.start!, ComponentStyleStatus.STARTING, KeyCommand.START);
 	}
 
 	stop = () => {
-		if(this.props.node.hasEnvironment() && this.state.connected)
+		if(this.state.connected)
 			this.run(this.props.node.component.commands?.stop!, ComponentStyleStatus.STOPPING, KeyCommand.STOP);
 	}
 
 	status = () => {
-		if(this.props.node.hasEnvironment() && this.state.connected)
+		if(this.state.connected)
 			this.run(this.props.node.component.commands?.status!, ComponentStyleStatus.CHECKING, KeyCommand.STATUS);
 	}
 
 	async componentDidMount() {
-		this.hasBeenMounted = true;
 		await this.initializeConnection();
 	}
 
-	disconnect = () => {
-		if(this.componentService !== undefined)
-			this.componentService!.disconnect();
-	}
-
-	async componentWillUnmount() {
-		this.hasBeenMounted = false;
-		this.disconnect();
-	}
-
 	updateConnection = () => {
-		if (this.props.cache.disconnected) {
-			this.disconnect();
-		}
-		else {
-			this.initializeConnection();
-		}
+		this.initializeConnection();
 	}
 
 	render() {

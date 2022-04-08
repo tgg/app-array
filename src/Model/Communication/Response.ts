@@ -1,4 +1,4 @@
-import { SendCommandRequest } from "./Request";
+import { SendCommandInfo } from "./Request";
 
 export enum JsonType {
 	TypeError    = "Error",
@@ -32,7 +32,7 @@ export interface UpdateResponse extends Response {
     status: UpdateStatus;
 }
 
-export interface CommandResponse extends UpdateResponse, SendCommandRequest {
+export interface CommandResponse extends UpdateResponse, SendCommandInfo {
     result: String;
 }
 

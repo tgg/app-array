@@ -1,5 +1,4 @@
 import styled from '@emotion/styled';
-import { hover } from '@testing-library/user-event/dist/hover';
 import React from "react";
 
 export interface ConnectedStatusTextProps {
@@ -7,6 +6,7 @@ export interface ConnectedStatusTextProps {
     host?: String;
     path?: String;
     justDot?: boolean;
+    widget?: boolean;
 }
 
 const StatusDot = styled.span`
@@ -68,8 +68,8 @@ export class ConnectedStatusText extends React.Component<ConnectedStatusTextProp
     render() {
         const display = `${this.props.host}${this.props.path}`
         let leftValue, widthValue, color, label;
-        leftValue = this.props.justDot ? "-5em" : "-10em";
-        widthValue = this.props.justDot ? "100px" : "200px";
+        leftValue = this.props.widget ? "-5em" : "-10em";
+        widthValue = this.props.widget ? "100px" : "200px";
         color = this.props.isConnected ? "green" : "red";
         label = this.props.justDot ? "" : this.props.isConnected ? "Connected" : "Not connected";
         return(

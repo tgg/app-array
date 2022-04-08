@@ -1,11 +1,8 @@
 import * as signalr from '@microsoft/signalr';
-import { ComponentNodeModel } from '../Components/Diagram/ComponentNodeModel';
 import { CacheInfo } from '../Model/CacheInfo';
 import { RequestFactory } from '../Model/Communication/Request';
-import { AppArray } from '../Model/Model';
 
 export class ComponentService {
-    private node: ComponentNodeModel;
     private cacheInfo: CacheInfo;
     private onConnected: () => void;
     private onError: (err: any) => void;
@@ -13,9 +10,8 @@ export class ComponentService {
     private onStatusUpdated: (payload: any) => void;
     private socket?: signalr.HubConnection;
 
-    constructor(cacheInfo: CacheInfo, node: ComponentNodeModel, onConnected: () => void, onError: (err: any) => void, onCommandReceived: (payload: any) => void, onStatusUpdated: (payload: any) => void) {
+    constructor(cacheInfo: CacheInfo, onConnected: () => void, onError: (err: any) => void, onCommandReceived: (payload: any) => void, onStatusUpdated: (payload: any) => void) {
         this.cacheInfo = cacheInfo;
-        this.node = node;
         this.onConnected = onConnected;
         this.onError = onError;
         this.onCommandReceived = onCommandReceived;
@@ -23,7 +19,7 @@ export class ComponentService {
     }
 
     async connect() {
-        let url =  `${this.cacheInfo.host}${this.node.path!}`;
+        let url =  `${this.cacheInfo.host}${this.cacheInfo.path}`;
 
 		this.socket = new signalr.HubConnectionBuilder()
 								.configureLogging(signalr.LogLevel.Debug)
@@ -40,8 +36,8 @@ export class ComponentService {
         await this.socket?.stop();
     }
 
-    sendCommand(id: string, payload: any) {
-        const req = new RequestFactory().builSendCommandRequest(id, payload, this.node.component.id)
+    sendCommand(id: string, payload: any, componentId: string) {
+        const req = new RequestFactory().builSendCommandRequest(id, payload, componentId);
         this.socket?.send("sendCommand", JSON.stringify(req));
     }
 }
