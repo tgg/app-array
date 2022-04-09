@@ -6,7 +6,8 @@ export enum JsonType {
     TypeExistingModel = "ExistingModel",
 	TypeMessage  = "Message",
 	TypeUpdate   = "Update",
-	TypeCommandResponse = "CommandResponse"
+	TypeCommandResponse = "CommandResponse",
+    TypeInfo = "Info",
 }
 
 export enum UpdateStatus {
