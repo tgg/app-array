@@ -1,0 +1,18 @@
+@startuml
+
+React -> Golang : Connect to environment path
+Golang -> React : Request token
+React -> React : Verify if token is present
+alt token not present
+React -> Golang : Ask for token & public key
+Golang -> React : Send token & public key
+end
+React -> Golang : Send token
+Golang -> Golang : Verify if credentials (vault or others) are needed for this token
+alt needed credentials
+Golang -> React : Request credentials for token
+React -> Golang : Send credentials encrypted with public key for token
+Golang -> Golang : Save credentials if correct (and run routines for token), if not correct loop
+end
+
+@enduml

@@ -25,7 +25,7 @@ import { ComponentNodeModel } from './Components/Diagram/ComponentNodeModel';
 import { EnvironmentComboBox, EnvironmentOptions } from './Components/StatusBar/EnvironmentComboBox';
 import { Environment, environmentsToOptions } from './Model/Environment';
 import { ComponentService } from './Service/ComponentService';
-import { CommandResponse, JsonType, ResponseFactory, UpdateResponse } from './Model/Communication/Response';
+import { CommandResponse, JsonType, ResponseFactory, TokenResponse, UpdateResponse } from './Model/Communication/Response';
 import { AuthenticationPopup, AuthenticationPopupState } from './Components/AuthenticationPopup';
 
 export interface SystemWidgetProps {
@@ -59,7 +59,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		this.props.cache.host = "http://localhost:9090";
 		this.modelService = new ModelService(this.props.cache, this.onModelServiceConnected, this.onModelServiceConnectionError, this.onModelSaved);
 		this.componentService = new ComponentService(this.props.cache, this.onComponentServiceConnected, this.onComponentServiceError, 
-															this.getCommandResult, this.onStatusUpdated, this.onCredentialResponse);
+															this.getCommandResult, this.onStatusUpdated, this.onCredentialResponse, this.tokenReceived);
 		
 		let model = new DiagramModel();
 		
@@ -228,10 +228,17 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		});
 	}
 
-	submitCredentials = (creds: AuthenticationPopupState) => {
+	submitClearCredentials = (creds: any) => {
 		this.setState({displayPopup: false});
 		if(this.state.connectedComponent) {
-			this.componentService.sendCredentials(creds);
+			this.componentService.sendTextCredentials(creds);
+		}
+	}
+
+	submitVaultCredentials = (creds: any) => {
+		this.setState({displayPopup: false});
+		if(this.state.connectedComponent) {
+			this.componentService.sendVaultCredentials(creds);
 		}
 	}
 
@@ -241,8 +248,26 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 
 	onCredentialResponse = (payload: any) => {
 		const resp = new ResponseFactory().buildHubResponse(payload);
-		toast.warn(resp.msg);
-		this.setState({displayPopup: true});
+		if(resp.type === JsonType.TypeCredentialResponse) {
+			toast.warn(resp.msg);
+			if(this.props.cache.hasTokenAndKey()) {
+				this.setState({displayPopup: true});
+			} else if(this.state.connectedComponent) {
+				toast.warn("No token & key found, requesting...");
+				this.componentService.requestToken();
+			}
+		}
+	}
+
+	tokenReceived = (payload: any) => {
+		const resp = new ResponseFactory().buildHubResponse(payload);
+		if(resp.type === JsonType.TypeTokenResponse) {
+			const tokenResp = new ResponseFactory().buildInnerResponse<TokenResponse>(payload);
+			this.props.cache.encryptionKey = tokenResp.publicKey;
+			this.props.cache.token = tokenResp.token;
+			this.props.cache.save();
+			this.setState({displayPopup: true});
+		}
 	}
 
 	setCacheModel = () => {
@@ -332,7 +357,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 				<DemoCanvasWidget>
 					<CanvasWidget engine={this.props.diagramEngine} />
 				</DemoCanvasWidget>
-				{this.state.displayPopup && <AuthenticationPopup submitCredentials={this.submitCredentials} closeCredentials={this.closeCredentials}></AuthenticationPopup>}
+				{this.state.displayPopup && <AuthenticationPopup submitVaultCredentials={this.submitVaultCredentials} submitClearCredentials={this.submitClearCredentials} closeCredentials={this.closeCredentials}></AuthenticationPopup>}
 			</DemoWorkspaceWidget>
 		);
 	}
