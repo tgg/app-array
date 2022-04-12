@@ -25,7 +25,7 @@ import { ComponentNodeModel } from './Components/Diagram/ComponentNodeModel';
 import { EnvironmentComboBox, EnvironmentOptions } from './Components/StatusBar/EnvironmentComboBox';
 import { Environment, environmentsToOptions } from './Model/Environment';
 import { ComponentService } from './Service/ComponentService';
-import { CommandResponse, JsonType, ResponseFactory, TokenResponse, UpdateResponse } from './Model/Communication/Response';
+import { CommandDownloadResponse, CommandResponse, JsonType, ResponseFactory, TokenResponse, UpdateResponse } from './Model/Communication/Response';
 import { AuthenticationPopup, AuthenticationPopupState } from './Components/AuthenticationPopup';
 
 export interface SystemWidgetProps {
@@ -142,6 +142,12 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 			this.updateNodes((node: ComponentNodeModel) => {
 				if(updateResponse.componentId === node.component.id && node.widget)
 					node.widget.getCommandResult(updateResponse);
+			})
+		} else if(resp.type === JsonType.TypeCommandDownloadResponse) {
+			const downloadResponse = new ResponseFactory().buildInnerResponse<CommandDownloadResponse>(payload);
+			this.updateNodes((node: ComponentNodeModel) => {
+				if(downloadResponse.componentId === node.component.id && node.widget)
+					node.widget.downloadFile(downloadResponse);
 			})
 		}
 	}

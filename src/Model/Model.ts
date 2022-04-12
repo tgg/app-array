@@ -4,6 +4,7 @@ export enum KeyCommand {
     START = "start",
     STOP = "stop",
     STATUS = "status",
+    DOWNLOAD = "download",
 }
 
 export namespace AppArray.Model {
@@ -54,7 +55,7 @@ export namespace AppArray.Model {
     }
 
     export interface Component extends LiveElement {
-        type: 'component';
+        type: String;
         provides?: Port[];
         consumes?: PortId[];
     }

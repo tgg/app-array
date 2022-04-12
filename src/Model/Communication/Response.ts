@@ -7,6 +7,7 @@ export enum JsonType {
 	TypeMessage  = "Message",
 	TypeUpdate   = "Update",
 	TypeCommandResponse = "CommandResponse",
+    TypeCommandDownloadResponse = "CommandDownloadResponse",
     TypeInfo = "Info",
 	TypeCredentialResponse = "CredentialResponse",
 	TypeTokenResponse = "TokenResponse",
@@ -37,6 +38,10 @@ export interface UpdateResponse extends Response {
 
 export interface CommandResponse extends UpdateResponse, SendCommandInfo {
     result: String;
+}
+
+export interface CommandDownloadResponse extends CommandResponse {
+    filename: String;
 }
 
 export interface TokenResponse extends Response {
