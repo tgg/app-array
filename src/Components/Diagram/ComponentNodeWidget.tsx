@@ -188,7 +188,13 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	}
 
 	downloadFile = (resp: CommandDownloadResponse) => {
-		console.log(`Received ${resp.filename} with content: ${resp.result}`);
+		const element = document.createElement("a");
+		const file = new Blob([resp.result as BlobPart], {type: 'text/plain'});
+		element.href = URL.createObjectURL(file);
+		element.download = resp.filename.split("/")[resp.filename.split("/").length - 1];
+		document.body.appendChild(element); // Required for this to work in FireFox
+		element.click();
+		console.log(`Received ${resp.filename}.`);
 	}
 
 	onStatusUpdated = (updateResponse: UpdateResponse) => {
