@@ -1,6 +1,7 @@
 {
   "name": "app-array",
   "version": "0.1.0",
+  "homepage": "./",
   "private": true,
   "dependencies": {
     "@microsoft/signalr": "^6.0.3",
