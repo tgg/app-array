@@ -1,5 +1,6 @@
-import { Environment } from "../Environment";
+import { Environment } from "../Model/Environment";
 import * as signalr from '@microsoft/signalr';
+import { ComponentService } from "./ComponentService";
 
 export enum Status {
     UNKNOWN,
@@ -46,7 +47,7 @@ export interface Cmd<S,T> {
     run(args: string[]): Promise<CommandResult<T>>;
 }
 export interface Executor<S,T> {
-    runner(steps: string[]): (context: Environment) => Cmd<S,T>;
+    runner(id: string, steps: string[]): (context: Environment) => Cmd<S,T>;
 }
 
 // We are not using eval here, but we should be careful about security
@@ -55,7 +56,7 @@ export interface Executor<S,T> {
 export class JavaScriptExecutor implements Executor<Uint8Array,any>{
     type = 'javascript';
 
-    runner(steps: string[]): (context: Environment) => Cmd<Uint8Array, any> {
+    runner(id: string, steps: string[]): (context: Environment) => Cmd<Uint8Array, any> {
         if (steps.length !== 1) {
             throw new Error("Only one function call supported!");
         }
@@ -67,13 +68,13 @@ export class JavaScriptExecutor implements Executor<Uint8Array,any>{
 
 export class ShellExecutor implements Executor<Uint8Array,any> {
         type = 'shell';
-        socket: signalr.HubConnection;
+        service: ComponentService;
         
-        constructor(socket: signalr.HubConnection) {
-            this.socket = socket;
+        constructor(service: ComponentService) {
+            this.service = service;
         }
         
-        runner(steps: string[]): (context: Environment) => Cmd<Uint8Array, any> {
+        runner(id: string, steps: string[]): (context: Environment) => Cmd<Uint8Array, any> {
             const out = new Channel<Uint8Array>('out');
             const te = new TextEncoder();
             
@@ -85,7 +86,7 @@ export class ShellExecutor implements Executor<Uint8Array,any> {
             };
             
             return (ctx: Environment) => {
-                let sock = this.socket;
+                let service = this.service;
                 
                 return {
                     launchTrail: startTrail,
@@ -96,7 +97,7 @@ export class ShellExecutor implements Executor<Uint8Array,any> {
                         return new Promise((resolve, reject) => {
                             // Loop with each command
                             steps.forEach(step => {
-                                sock.invoke('sendCommand', step);
+                                service.sendCommand(id, step);
                             });
                             
                             // TODO: Wait until nothing left to read

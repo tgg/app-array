@@ -1,4 +1,10 @@
-import { Environment } from '../Environment'
+import { Environment } from './Environment'
+
+export enum KeyCommand {
+    START = "start",
+    STOP = "stop",
+    STATUS = "status",
+}
 
 export namespace AppArray.Model {
     // These steps can contain platform dependent environments variables

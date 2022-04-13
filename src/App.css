@@ -54,28 +54,72 @@
   padding-left: 3px;
   outline: none;
   box-shadow: 0 0 20px RED;
-
-  
 }
 .STARTING{
-background: linear-gradient(90deg, green 50%, transparent 50%), 
-linear-gradient(90deg, green 50%, transparent 50%), 
-linear-gradient(0deg, green 50%, transparent 50%), 
-linear-gradient(0deg, green 50%, transparent 50%);
-background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
-background-size: 16px 3px, 16px 3px, 3px 16px, 3px 16px;
-background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0px;
-border-radius: 5px;
-padding: 10px;
-animation: dash 10s linear infinite;
-padding-top: 3px;
-padding-right: 3px;
-padding-bottom: 3px;
-padding-left: 3px;
-outline: none;
-box-shadow: 0 0 20px green;
-
-
+  background: linear-gradient(90deg, green 50%, transparent 50%), 
+  linear-gradient(90deg, green 50%, transparent 50%), 
+  linear-gradient(0deg, green 50%, transparent 50%), 
+  linear-gradient(0deg, green 50%, transparent 50%);
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-size: 16px 3px, 16px 3px, 3px 16px, 3px 16px;
+  background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0px;
+  border-radius: 5px;
+  padding: 10px;
+  animation: dash 10s linear infinite;
+  padding-top: 3px;
+  padding-right: 3px;
+  padding-bottom: 3px;
+  padding-left: 3px;
+  outline: none;
+  box-shadow: 0 0 20px green;
+}
+.STARTED{
+  background: linear-gradient(90deg, green 50%, transparent 50%), 
+  linear-gradient(90deg, green 50%, transparent 50%), 
+  linear-gradient(0deg, green 50%, transparent 50%), 
+  linear-gradient(0deg, green 50%, transparent 50%);
+  background-size: 16px 3px, 16px 3px, 3px 16px, 3px 16px;
+  background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0px;
+  border-radius: 10px;
+  padding: 10px;
+  padding-top: 3px;
+  padding-right: 3px;
+  padding-bottom: 3px;
+  padding-left: 3px;
+  outline: none;
+}
+.STOPPED{
+  background: linear-gradient(90deg, red 50%, transparent 50%), 
+  linear-gradient(90deg, red 50%, transparent 50%), 
+  linear-gradient(0deg, red 50%, transparent 50%), 
+  linear-gradient(0deg, red 50%, transparent 50%);
+  background-size: 16px 3px, 16px 3px, 3px 16px, 3px 16px;
+  background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0px;
+  border-radius: 10px;
+  padding: 10px;
+  padding-top: 3px;
+  padding-right: 3px;
+  padding-bottom: 3px;
+  padding-left: 3px;
+  outline: none;
+}
+.CHECKING{
+  background: linear-gradient(90deg, blue 50%, transparent 50%), 
+  linear-gradient(90deg, blue 50%, transparent 50%), 
+  linear-gradient(0deg, blue 50%, transparent 50%), 
+  linear-gradient(0deg, blue 50%, transparent 50%);
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-size: 16px 3px, 16px 3px, 3px 16px, 3px 16px;
+  background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0px;
+  border-radius: 5px;
+  padding: 10px;
+  animation: dash 10s linear infinite;
+  padding-top: 3px;
+  padding-right: 3px;
+  padding-bottom: 3px;
+  padding-left: 3px;
+  outline: none;
+  box-shadow: 0 0 20px blue;
 }
 
 @keyframes dash {
