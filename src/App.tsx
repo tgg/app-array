@@ -56,7 +56,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 	constructor(props: any) {
 		super(props);
 		this.init = true;
-		this.props.cache.host = "http://localhost:9090";
+		this.props.cache.host = process.env.REACT_APP_BACKEND_HOST!;
 		this.modelService = new ModelService(this.props.cache, this.onModelServiceConnected, this.onModelServiceConnectionError, this.onModelSaved);
 		this.componentService = new ComponentService(this.props.cache, this.onComponentServiceConnected, this.onComponentServiceError, 
 															this.getCommandResult, this.onStatusUpdated, this.onCredentialResponse, this.tokenReceived);
