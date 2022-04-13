@@ -5,6 +5,7 @@ import styled from '@emotion/styled';
 
 export interface DemoWorkspaceWidgetProps {
 	buttons?: any;
+	options?: any;
 }
 
 namespace S {
@@ -49,7 +50,7 @@ export class DemoWorkspaceWidget extends React.Component<DemoWorkspaceWidgetProp
 	render() {
 		return (
 			<S.Container>
-				<S.Toolbar>{this.props.buttons}</S.Toolbar>
+				<S.Toolbar>{this.props.buttons}{this.props.options}</S.Toolbar>
 				<S.Content>{this.props.children}</S.Content>
 			</S.Container>
 		);

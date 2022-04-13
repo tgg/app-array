@@ -1,16 +1,17 @@
 import * as React from 'react';
-import { DefaultPortLabel,DiagramEngine, PortModelAlignment, PortWidget } from '@projectstorm/react-diagrams';
-import styled from '@emotion/styled';
+import { DiagramEngine} from '@projectstorm/react-diagrams';
 import { ComponentNodeModel } from './ComponentNodeModel';
 import { map } from 'lodash';
-import { isThisTypeNode } from 'typescript';
-import { Executor, ShellExecutor, Status } from './Executor';
+import { Executor, ShellExecutor } from '../../Service/Executor';
+
+const styled_1  = require("@emotion/styled");
+const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
+
 export interface ComponentNodeWidgetProps {
 	node: ComponentNodeModel;
 	engine: DiagramEngine;
 }
-const styled_1  = require("@emotion/styled");
-const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
+
 export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProps>  {
 	Border = styled_1.default.div `
 	
@@ -113,7 +114,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStart = this.props.node.hasCommand('start');
 		this.hasStop = this.props.node.hasCommand('stop');
 		//console.log(process.env.REACT_APP_BACKEND_HOST)
-		const socket = new WebSocket("ws://localhost:8080/shell");
+		const socket = new WebSocket("ws://localhost:9090/shell");
 
 		socket.onopen = (e) => {
 			console.info('Status: Connected');

@@ -1,6 +1,5 @@
 import { DefaultNodeModel } from "@projectstorm/react-diagrams";
-
-import { AppArray } from './Model';
+import { AppArray } from "../../Model/Model";
 
 export class ComponentNodeModel extends DefaultNodeModel {
     readonly component: AppArray.Model.Component;

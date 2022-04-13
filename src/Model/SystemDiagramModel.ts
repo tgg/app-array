@@ -1,6 +1,6 @@
 import { DefaultNodeModel, DefaultPortModel, DiagramModel, DiagramModelGenerics, LinkModel, NodeModel } from "@projectstorm/react-diagrams";
 import { AppArray } from './Model'
-import { ComponentNodeModel } from './ComponentNodeModel'
+import { ComponentNodeModel } from '../Components/Diagram/ComponentNodeModel'
 
 export class SystemDiagramModel<G extends DiagramModelGenerics = DiagramModelGenerics> extends DiagramModel {
     protected application: AppArray.Model.Application;
