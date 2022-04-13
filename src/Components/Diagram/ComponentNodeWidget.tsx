@@ -7,7 +7,7 @@ import { Executor, ShellExecutor } from '../../Service/Executor';
 import { CacheInfo } from '../../Model/CacheInfo';
 import { AppArray, KeyCommand } from '../../Model/Model';
 import { ComponentService } from '../../Service/ComponentService';
-import { CommandResponse, JsonType, ResponseFactory, UpdateResponse, UpdateStatus } from '../../Model/Communication/Response';
+import { CommandDownloadResponse, CommandResponse, JsonType, ResponseFactory, UpdateResponse, UpdateStatus } from '../../Model/Communication/Response';
 
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
@@ -125,6 +125,16 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 			color: blue;
 		}
 	`;
+	Button_other = styled_1.default.button `
+		background-color: rgba(255, 100, 100, 0);;
+		border: none;
+		color: white;
+		cursor: pointer;
+		font-size:20px;
+		&:hover {
+			color: blue;
+		}
+	`;
 	Icon = styled_1.default('i')`
 	`;
 
@@ -132,6 +142,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStart:boolean;
 	private hasStop:boolean;
 	private hasStatus:boolean;
+	private hasDownload:boolean;
 
 	private executor?: Executor<Uint8Array,any>;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
@@ -145,6 +156,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStart = this.props.node.hasCommand(KeyCommand.START);
 		this.hasStop = this.props.node.hasCommand(KeyCommand.STOP);
 		this.hasStatus = this.props.node.hasCommand(KeyCommand.STATUS);
+		this.hasDownload = this.props.node.hasCommand(KeyCommand.DOWNLOAD);
 
 		this.state = {
 			status: ComponentStyleStatus.UNKNOWN,
@@ -173,6 +185,16 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 				break;
 		}
 		console.log(`Received result ${resp.result} for command ${resp.command} for component ${resp.componentId}`);
+	}
+
+	downloadFile = (resp: CommandDownloadResponse) => {
+		const element = document.createElement("a");
+		const file = new Blob([resp.result as BlobPart], {type: 'text/plain'});
+		element.href = URL.createObjectURL(file);
+		element.download = resp.filename.split("/")[resp.filename.split("/").length - 1];
+		document.body.appendChild(element); // Required for this to work in FireFox
+		element.click();
+		console.log(`Received ${resp.filename}.`);
 	}
 
 	onStatusUpdated = (updateResponse: UpdateResponse) => {
@@ -208,6 +230,11 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	status = () => {
 		if(this.state.connected)
 			this.run(this.props.node.component.commands?.status!, ComponentStyleStatus.CHECKING, KeyCommand.STATUS);
+	}
+
+	download = () => {
+		if(this.state.connected)
+			this.run(this.props.node.component.commands?.download!, ComponentStyleStatus.CHECKING, KeyCommand.DOWNLOAD);
 	}
 
 	async componentDidMount() {
@@ -258,6 +285,12 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 								<this.Button_status onClick={this.status}>
 									<this.Icon className="fa fa-question-circle"></this.Icon>
 								</this.Button_status>
+							}
+
+							{this.hasDownload &&
+								<this.Button_other onClick={this.download}>
+									<this.Icon className="fa fa-download"></this.Icon>
+								</this.Button_other>
 							}
 							
 						</this.ButtonsPanel>

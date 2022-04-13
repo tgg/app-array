@@ -59,6 +59,21 @@
             "consumes": [
                 "destination"
             ]
+        },
+        {
+            "id": "ZippedFile",
+            "type": "artifact",
+            "commands": {
+                "download": {
+                    "type": "shell",
+                    "steps": [
+                        "/app/bin/output"
+                    ]
+                }
+            },
+            "consumes": [
+                "output"
+            ]
         }
     ],
     "environments": [
@@ -66,12 +81,18 @@
             "id": "my own machine",
             "Copier": {
                 "host": "localhost",
+                "login": "seniuus",
                 "source": "file:///tmp/app/in",
                 "destination": "file:///tmp/app/out"
             },
             "Zipper": {
                 "host": "localhost",
+                "login": "seniuus",
                 "output": "file:///tmp/my.tgz"
+            },
+            "ZippedFile": {
+                "host": "localhost",
+                "login": "seniuus"
             }
         }
     ]
