@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import createEngine, {
 	DagreEngine,
@@ -25,7 +25,8 @@ import { ComponentNodeModel } from './Components/Diagram/ComponentNodeModel';
 import { EnvironmentComboBox, EnvironmentOptions } from './Components/StatusBar/EnvironmentComboBox';
 import { Environment, environmentsToOptions } from './Model/Environment';
 import { ComponentService } from './Service/ComponentService';
-import { CommandResponse, JsonType, ResponseFactory, UpdateResponse } from './Model/Communication/Response';
+import { CommandResponse, JsonType, ResponseFactory, TokenResponse, UpdateResponse } from './Model/Communication/Response';
+import { AuthenticationPopup, AuthenticationPopupState } from './Components/AuthenticationPopup';
 
 export interface SystemWidgetProps {
 	diagramEngine: DiagramEngine;
@@ -43,6 +44,7 @@ export interface SystemWidgetState {
 	environments: any;
 	environment: EnvironmentOptions | undefined | null;
 	path: String;
+	displayPopup: boolean;
 }
 
 class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState> {
@@ -56,7 +58,8 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 		this.init = true;
 		this.props.cache.host = "http://localhost:9090";
 		this.modelService = new ModelService(this.props.cache, this.onModelServiceConnected, this.onModelServiceConnectionError, this.onModelSaved);
-		this.componentService = new ComponentService(this.props.cache, this.onComponentServiceConnected, this.onComponentServiceError, this.getCommandResult, this.onStatusUpdated);
+		this.componentService = new ComponentService(this.props.cache, this.onComponentServiceConnected, this.onComponentServiceError, 
+															this.getCommandResult, this.onStatusUpdated, this.onCredentialResponse, this.tokenReceived);
 		
 		let model = new DiagramModel();
 		
@@ -82,6 +85,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 			environments: [],
 			environment: undefined,
 			path: "",
+			displayPopup: false,
 		};
 	}
 
@@ -150,6 +154,8 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 				if(updateResponse.componentId === node.component.id && node.widget)
 					node.widget.onStatusUpdated(updateResponse);
 			})
+		} else if (resp.type === JsonType.TypeInfo) {
+			toast.info(resp.msg);
 		} else {
 			console.log(resp.msg);
 		}
@@ -220,6 +226,48 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 				this.updateNodes(this.initializeNodeConnection);
 			}
 		});
+	}
+
+	submitClearCredentials = (creds: any) => {
+		this.setState({displayPopup: false});
+		if(this.state.connectedComponent) {
+			this.componentService.sendTextCredentials(creds);
+		}
+	}
+
+	submitVaultCredentials = (creds: any) => {
+		this.setState({displayPopup: false});
+		if(this.state.connectedComponent) {
+			this.componentService.sendVaultCredentials(creds);
+		}
+	}
+
+	closeCredentials = () => {
+		this.setState({displayPopup: false});
+	}
+
+	onCredentialResponse = (payload: any) => {
+		const resp = new ResponseFactory().buildHubResponse(payload);
+		if(resp.type === JsonType.TypeCredentialResponse) {
+			toast.warn(resp.msg);
+			if(this.props.cache.hasTokenAndKey()) {
+				this.setState({displayPopup: true});
+			} else if(this.state.connectedComponent) {
+				toast.warn("No token & key found, requesting...");
+				this.componentService.requestToken();
+			}
+		}
+	}
+
+	tokenReceived = (payload: any) => {
+		const resp = new ResponseFactory().buildHubResponse(payload);
+		if(resp.type === JsonType.TypeTokenResponse) {
+			const tokenResp = new ResponseFactory().buildInnerResponse<TokenResponse>(payload);
+			this.props.cache.encryptionKey = tokenResp.publicKey;
+			this.props.cache.token = tokenResp.token;
+			this.props.cache.save();
+			this.setState({displayPopup: true});
+		}
 	}
 
 	setCacheModel = () => {
@@ -309,6 +357,7 @@ class SystemWidget extends React.Component<SystemWidgetProps, SystemWidgetState>
 				<DemoCanvasWidget>
 					<CanvasWidget engine={this.props.diagramEngine} />
 				</DemoCanvasWidget>
+				{this.state.displayPopup && <AuthenticationPopup submitVaultCredentials={this.submitVaultCredentials} submitClearCredentials={this.submitClearCredentials} closeCredentials={this.closeCredentials}></AuthenticationPopup>}
 			</DemoWorkspaceWidget>
 		);
 	}

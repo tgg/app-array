@@ -6,7 +6,10 @@ export enum JsonType {
     TypeExistingModel = "ExistingModel",
 	TypeMessage  = "Message",
 	TypeUpdate   = "Update",
-	TypeCommandResponse = "CommandResponse"
+	TypeCommandResponse = "CommandResponse",
+    TypeInfo = "Info",
+	TypeCredentialResponse = "CredentialResponse",
+	TypeTokenResponse = "TokenResponse",
 }
 
 export enum UpdateStatus {
@@ -34,6 +37,12 @@ export interface UpdateResponse extends Response {
 
 export interface CommandResponse extends UpdateResponse, SendCommandInfo {
     result: String;
+}
+
+export interface TokenResponse extends Response {
+	msg: String
+	token: String
+	publicKey: String
 }
 
 export class ResponseFactory {
