@@ -1,10 +1,8 @@
 import * as signalr from '@microsoft/signalr';
 import { CacheInfo } from '../Model/CacheInfo';
 import { RequestFactory } from '../Model/Communication/Request';
-import { AppArray } from '../Model/Model';
 
 export class ComponentService {
-    private component: AppArray.Model.Component;
     private cacheInfo: CacheInfo;
     private onConnected: () => void;
     private onError: (err: any) => void;
@@ -12,9 +10,8 @@ export class ComponentService {
     private onStatusUpdated: (payload: any) => void;
     private socket?: signalr.HubConnection;
 
-    constructor(cacheInfo: CacheInfo, component: AppArray.Model.Component, onConnected: () => void, onError: (err: any) => void, onCommandReceived: (payload: any) => void, onStatusUpdated: (payload: any) => void) {
+    constructor(cacheInfo: CacheInfo, onConnected: () => void, onError: (err: any) => void, onCommandReceived: (payload: any) => void, onStatusUpdated: (payload: any) => void) {
         this.cacheInfo = cacheInfo;
-        this.component = component;
         this.onConnected = onConnected;
         this.onError = onError;
         this.onCommandReceived = onCommandReceived;
@@ -39,8 +36,8 @@ export class ComponentService {
         await this.socket?.stop();
     }
 
-    async sendCommand(id: string, payload: any) {
-        const req = new RequestFactory().builSendCommandRequest(id, payload, this.component.id)
+    sendCommand(id: string, payload: any, componentId: string) {
+        const req = new RequestFactory().builSendCommandRequest(id, payload, componentId);
         this.socket?.send("sendCommand", JSON.stringify(req));
     }
 }

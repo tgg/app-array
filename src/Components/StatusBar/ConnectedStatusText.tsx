@@ -1,11 +1,12 @@
 import styled from '@emotion/styled';
-import { hover } from '@testing-library/user-event/dist/hover';
 import React from "react";
 
 export interface ConnectedStatusTextProps {
 	isConnected?: boolean;
+    host?: String;
     path?: String;
     justDot?: boolean;
+    widget?: boolean;
 }
 
 const StatusDot = styled.span`
@@ -15,6 +16,20 @@ const StatusDot = styled.span`
     border-radius: 50%;
     display: inline-block;
     margin-right: 0.5em;
+`;
+
+const Icon = styled.i`
+    border: none;
+    cursor: pointer;
+    font-size:1.2em;
+    color: ${(p: { color: any; }) => p.color};
+    margin-right: 0.2em;
+    &:hover {
+        color: white;
+    }
+    &:active {
+        color: grey;
+    }
 `;
 
 const StyledText = styled.p`
@@ -51,13 +66,14 @@ const StyledText = styled.p`
 
 export class ConnectedStatusText extends React.Component<ConnectedStatusTextProps> {
     render() {
+        const display = `${this.props.host}${this.props.path}`
         let leftValue, widthValue, color, label;
-        leftValue = this.props.justDot ? "-5em" : "-10em";
-        widthValue = this.props.justDot ? "100px" : "200px";
+        leftValue = this.props.widget ? "-5em" : "-10em";
+        widthValue = this.props.widget ? "100px" : "200px";
         color = this.props.isConnected ? "green" : "red";
         label = this.props.justDot ? "" : this.props.isConnected ? "Connected" : "Not connected";
         return(
-            <StyledText data-text={this.props.path} leftvalue={leftValue} widthvalue={widthValue}><StatusDot background={color}></StatusDot>{label}</StyledText>
+            <StyledText data-text={display} leftvalue={leftValue} widthvalue={widthValue}><Icon className="fa fa-plug" color={color}></Icon>{label}</StyledText>
         );
     }
 }

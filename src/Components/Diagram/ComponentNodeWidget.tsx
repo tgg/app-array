@@ -1,17 +1,13 @@
 import * as React from 'react';
-import * as signalr from '@microsoft/signalr';
 import { DiagramEngine} from '@projectstorm/react-diagrams';
 import { map } from 'lodash';
 import { toast } from 'react-toastify';
 import { ComponentNodeModel } from './ComponentNodeModel';
-import { Context, Environment } from '../../Model/Environment';
 import { Executor, ShellExecutor } from '../../Service/Executor';
 import { CacheInfo } from '../../Model/CacheInfo';
-import { KeyCommand } from '../../Model/Model';
-import { ConnectedStatusText } from '../StatusBar/ConnectedStatusText';
+import { AppArray, KeyCommand } from '../../Model/Model';
 import { ComponentService } from '../../Service/ComponentService';
 import { CommandResponse, JsonType, ResponseFactory, UpdateResponse, UpdateStatus } from '../../Model/Communication/Response';
-import { isThisTypeNode } from 'typescript';
 
 const styled_1  = require("@emotion/styled");
 const DefaultPortLabelWidget_1 = require("@projectstorm/react-diagrams/")
@@ -137,8 +133,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStop:boolean;
 	private hasStatus:boolean;
 
-	private executor: Executor<Uint8Array,any>;
-	private componentService: ComponentService;
+	private executor?: Executor<Uint8Array,any>;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
 	constructor(args: ComponentNodeWidgetProps | Readonly<ComponentNodeWidgetProps>) {
@@ -151,117 +146,76 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStop = this.props.node.hasCommand(KeyCommand.STOP);
 		this.hasStatus = this.props.node.hasCommand(KeyCommand.STATUS);
 
-		this.componentService = new ComponentService(this.props.cache, this.props.node.component, this.onConnected, this.onError, this.getCommandResult, this.onStatusUpdated);
-		this.executor = new ShellExecutor(this.componentService);
-
 		this.state = {
 			status: ComponentStyleStatus.UNKNOWN,
 			connected: false
 		}
     }
 
-	getCommandResult = (payload: any) => {
-		const resp = new ResponseFactory().buildInnerResponse<CommandResponse>(payload);
+	initializeConnection = async () => {
+		if(this.executor !== undefined && this.state.connected) {
+			this.executor = undefined;
+			this.setState({connected: false});
+		} else if(this.props.node.hasService() && !this.state.connected) {
+			this.executor = new ShellExecutor(this.props.node);
+			this.setState({connected: true});
+		}
+	}
+
+	getCommandResult = (resp: CommandResponse) => {
 		switch(resp.commandId) {
 			case KeyCommand.START:
 			case KeyCommand.STATUS:
 				this.setState({ status: resp.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STARTED : ComponentStyleStatus.STOPPED });
 				break;
 			case KeyCommand.STOP:
-				this.setState({ status: resp.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STOPPED : ComponentStyleStatus.STARTED });
+				this.setState({ status: resp.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STOPPED : ComponentStyleStatus.UNKNOWN });
 				break;
 		}
 		console.log(`Received result ${resp.result} for command ${resp.command} for component ${resp.componentId}`);
 	}
 
-	onStatusUpdated = (payload: any) => {
-		const resp = new ResponseFactory().buildHubResponse(payload);
-		if(resp.type === JsonType.TypeUpdate) {
-			const updateResponse = new ResponseFactory().buildInnerResponse<UpdateResponse>(payload);
-			if(updateResponse.componentId === this.props.node.component.id) {
-				this.setState({ status: updateResponse.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STARTED : ComponentStyleStatus.STOPPED });
-			}
-		} else {
-			console.log(resp.msg);
-		}
+	onStatusUpdated = (updateResponse: UpdateResponse) => {
+		this.setState({ status: updateResponse.status == UpdateStatus.StatusOk ? ComponentStyleStatus.STARTED : ComponentStyleStatus.STOPPED });
 	}
 
-	onConnected = () => {
-		toast.success(`Component connected ${this.props.node.component.id} to ${this.props.cache.path}`);
-		this.setState({connected: true});
-	}
-	
-	onError = (err: any) => {
-		toast.error(`Component ${this.props.node.component.id} failed to connect to ${this.props.cache.path} : ${err}`);
-		this.setState({connected: false});
+	run = (cmd: AppArray.Model.Command, status: ComponentStyleStatus, keyCmd: KeyCommand) => {
+		this.setState({status: status});
+		let runner = this.executor!.runner(keyCmd, cmd.steps);
+		let d = new TextDecoder();
+		let context = { test: new Map<string, string>() }
+		let instance = runner({ id: 'thisEnvironment', context });
+		instance.channels.out.onReceive = (data: Uint8Array | null) => {
+			if (data) {
+				console.info(d.decode(data));
+			}
+			return true;
+		};
+		
+		instance.run([]);
 	}
 	
 	start = () => {
-		let cmd = this.props.node.component.commands?.start!;
-		this.setState({status: ComponentStyleStatus.STARTING});
-		let runner = this.executor.runner(KeyCommand.START, cmd.steps);
-		let d = new TextDecoder();
-		let context = { test: new Map<string, string>() }
-		let instance = runner({ id: 'thisEnvironment', context });
-		instance.channels.out.onReceive = (data: Uint8Array | null) => {
-			if (data) {
-				console.info(d.decode(data));
-			}
-			return true;
-		};
-		
-		instance.run([]);
+		if(this.state.connected)
+			this.run(this.props.node.component.commands?.start!, ComponentStyleStatus.STARTING, KeyCommand.START);
 	}
 
 	stop = () => {
-		let cmd = this.props.node.component.commands?.stop!;
-		this.setState({status: ComponentStyleStatus.STOPPING});
-		let runner = this.executor.runner(KeyCommand.STOP, cmd.steps);
-		let d = new TextDecoder();
-		let context = { test: new Map<string, string>() }
-		let instance = runner({ id: 'thisEnvironment', context });
-		instance.channels.out.onReceive = (data: Uint8Array | null) => {
-			if (data) {
-				console.info(d.decode(data));
-			}
-			return true;
-		};
-		
-		instance.run([]);
+		if(this.state.connected)
+			this.run(this.props.node.component.commands?.stop!, ComponentStyleStatus.STOPPING, KeyCommand.STOP);
 	}
 
 	status = () => {
-		let cmd = this.props.node.component.commands?.stop!;
-		this.setState({status: ComponentStyleStatus.CHECKING});
-		let runner = this.executor.runner(KeyCommand.STATUS, cmd.steps);
-		let d = new TextDecoder();
-		let context = { test: new Map<string, string>() }
-		let instance = runner({ id: 'thisEnvironment', context });
-		instance.channels.out.onReceive = (data: Uint8Array | null) => {
-			if (data) {
-				console.info(d.decode(data));
-			}
-			return true;
-		};
-		
-		instance.run([]);
+		if(this.state.connected)
+			this.run(this.props.node.component.commands?.status!, ComponentStyleStatus.CHECKING, KeyCommand.STATUS);
 	}
 
 	async componentDidMount() {
-		await this.componentService.connect();
+		await this.initializeConnection();
 	}
 
-	async componentWillUnmount() {
-		this.componentService.disconnect();
-	}
-
-	onDisconnected = () => {
-		if (this.props.cache.disconnected) {
-			this.componentService.disconnect();
-		}
-		else {
-			this.componentService.connect();
-		}
+	updateConnection = () => {
+		this.initializeConnection();
 	}
 
 	render() {
@@ -274,7 +228,6 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 
 						<this.Title>
 							<this.TitleName>{this.props.node.getOptions().name}</this.TitleName>
-							<ConnectedStatusText justDot={true} isConnected={this.state.connected} path={this.props.cache.path}></ConnectedStatusText>
 						</this.Title>
 
 						<this.Ports>

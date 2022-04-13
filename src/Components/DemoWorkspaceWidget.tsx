@@ -16,6 +16,10 @@ namespace S {
 		flex-shrink: 0;
 	`;
 
+	export const FillSpace = styled.span`
+	    flex: 1 1 auto;
+	`;
+
 	export const Content = styled.div`
 		flex-grow: 1;
 		height: 100%;
@@ -57,9 +61,9 @@ export class DemoWorkspaceWidget extends React.Component<DemoWorkspaceWidgetProp
 	render() {
 		return (
 			<S.Container>
-				<S.Toolbar>{this.props.buttons}{this.props.options}</S.Toolbar>
+				<S.Toolbar>{this.props.buttons}<S.FillSpace />{this.props.options}</S.Toolbar>
 				<S.Content>{this.props.children}</S.Content>
-				<S.StatusBar>{this.props.statusItems}</S.StatusBar>
+				<S.StatusBar><S.FillSpace />{this.props.statusItems}</S.StatusBar>
 			</S.Container>
 		);
 	}
