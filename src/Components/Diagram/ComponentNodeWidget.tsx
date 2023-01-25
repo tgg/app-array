@@ -125,6 +125,16 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 			color: blue;
 		}
 	`;
+	Button_website = styled_1.default.button `
+		background-color: rgba(255, 100, 100, 0);;
+		border: none;
+		color: white;
+		cursor: pointer;
+		font-size:22px;
+		&:hover {
+			color: purple;
+		}
+	`;
 	Button_other = styled_1.default.button `
 		background-color: rgba(255, 100, 100, 0);;
 		border: none;
@@ -143,6 +153,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasStop:boolean;
 	private hasStatus:boolean;
 	private hasDownload:boolean;
+	private hasWebsite:boolean;
 
 	private executor?: Executor<Uint8Array,any>;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
@@ -157,6 +168,7 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStop = this.props.node.hasCommand(KeyCommand.STOP);
 		this.hasStatus = this.props.node.hasCommand(KeyCommand.STATUS);
 		this.hasDownload = this.props.node.hasCommand(KeyCommand.DOWNLOAD);
+		this.hasWebsite = this.props.node.hasCommand(KeyCommand.WEBSITE);
 
 		this.state = {
 			status: ComponentStyleStatus.UNKNOWN,
@@ -236,6 +248,11 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		if(this.state.connected)
 			this.run(this.props.node.component.commands?.download!, ComponentStyleStatus.CHECKING, KeyCommand.DOWNLOAD);
 	}
+	
+	website = () => {
+		if(this.state.connected)
+			this.run(this.props.node.component.commands?.website!, ComponentStyleStatus.STARTING, KeyCommand.WEBSITE);
+	}
 
 	async componentDidMount() {
 		await this.initializeConnection();
@@ -290,6 +307,12 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 							{this.hasDownload &&
 								<this.Button_other onClick={this.download}>
 									<this.Icon className="fa fa-download"></this.Icon>
+								</this.Button_other>
+							}
+							
+							{this.hasWebsite &&
+								<this.Button_other onClick={this.website}>
+									<this.Icon className="fa fa-globe"></this.Icon>
 								</this.Button_other>
 							}
 							
