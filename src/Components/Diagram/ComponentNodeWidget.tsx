@@ -155,6 +155,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 	private hasDownload:boolean;
 	private hasWebsite:boolean;
 
+	private hasTerminal:boolean;
+
 	private executor?: Executor<Uint8Array,any>;
 	generatePort: (port: any) => React.FunctionComponentElement<{ engine: DiagramEngine; port: any; key: any; }>;
 
@@ -169,6 +171,8 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 		this.hasStatus = this.props.node.hasCommand(KeyCommand.STATUS);
 		this.hasDownload = this.props.node.hasCommand(KeyCommand.DOWNLOAD);
 		this.hasWebsite = this.props.node.hasCommand(KeyCommand.WEBSITE);
+		this.hasTerminal = this.props.node.hasCommand(KeyCommand.TERMINAL);
+
 
 		this.state = {
 			status: ComponentStyleStatus.UNKNOWN,
@@ -254,6 +258,11 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 			this.run(this.props.node.component.commands?.website!, ComponentStyleStatus.STARTING, KeyCommand.WEBSITE);
 	}
 
+	terminal = () => {
+		if(this.state.connected)
+			this.run(this.props.node.component.commands?.terminal!, ComponentStyleStatus.CHECKING, KeyCommand.TERMINAL);
+	}
+
 	async componentDidMount() {
 		await this.initializeConnection();
 	}
@@ -313,6 +322,12 @@ export class ComponentNodeWidget extends React.Component<ComponentNodeWidgetProp
 							{this.hasWebsite &&
 								<this.Button_other onClick={this.website}>
 									<this.Icon className="fa fa-globe"></this.Icon>
+								</this.Button_other>
+							}
+
+							{this.hasTerminal &&
+								<this.Button_other onClick={this.terminal}>
+									<this.Icon className="fa fa-terminal"></this.Icon>
 								</this.Button_other>
 							}
 							
