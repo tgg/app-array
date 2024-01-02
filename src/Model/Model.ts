@@ -5,6 +5,8 @@ export enum KeyCommand {
     STOP = "stop",
     STATUS = "status",
     DOWNLOAD = "download",
+	WEBSITE = "website",
+    TERMINAL = "terminal"
 }
 
 export namespace AppArray.Model {
