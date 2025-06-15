@@ -4,26 +4,26 @@
   "homepage": "./",
   "private": true,
   "dependencies": {
-    "@microsoft/signalr": "^6.0.3",
-    "@projectstorm/react-diagrams": "^6.6.1",
-    "@testing-library/jest-dom": "^5.16.1",
-    "@testing-library/react": "^12.1.2",
-    "@testing-library/user-event": "^13.5.0",
+    "@microsoft/signalr": "^8.0.7",
+    "@projectstorm/react-diagrams": "^7.0.4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/dotenv": "^8.2.0",
-    "@types/jest": "^27.0.3",
-    "@types/react": "^17.0.37",
-    "@types/react-dom": "^17.0.11",
-    "follow-redirects": ">=1.14.7",
-    "jsencrypt": "^3.2.1",
+    "@types/jest": "^29.5.3",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "follow-redirects": ">=1.15.9",
+    "jsencrypt": "^3.3.2",
     "lodash": "^4.17.21",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-scripts": "5.0.0",
-    "react-select": "^5.2.2",
-    "react-tabs": "^4.2.0",
-    "react-toastify": "^8.2.0",
-    "typescript": "^4.5.4",
-    "web-vitals": "^2.1.2"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "^0.0.0",
+    "react-select": "^5.10.1",
+    "react-tabs": "^6.1.0",
+    "react-toastify": "^11.0.5",
+    "typescript": "^5.8.3",
+    "web-vitals": "^5.0.3"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -50,7 +50,7 @@
     ]
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.178",
+    "@types/lodash": "^4.14.195",
     "@types/react-tabs": "^2.3.4"
   }
 }
